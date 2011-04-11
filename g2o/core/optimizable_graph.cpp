@@ -258,7 +258,8 @@ bool OptimizableGraph::load(istream& is, bool createEdges)
         }
       }
       else {
-        int ids[numV];
+        vector<int> ids;
+        ids.resize(numV);
         for (int l = 0; l < numV; ++l)
           currentLine >> ids[l];
         bool vertsOkay = true;
@@ -274,7 +275,7 @@ bool OptimizableGraph::load(istream& is, bool createEdges)
           for (int l = 0; l < numV; ++l) {
             if (l > 0)
               cerr << " <->";
-            cerr << " " << ids[0];
+            cerr << " " << ids[l];
           }
           delete e;
         } else {
@@ -284,7 +285,7 @@ bool OptimizableGraph::load(istream& is, bool createEdges)
             for (int l = 0; l < numV; ++l) {
               if (l > 0)
                 cerr << " <->";
-              cerr << " " << ids[0];
+              cerr << " " << ids[l];
             }
             delete e;
           }

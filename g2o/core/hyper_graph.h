@@ -22,7 +22,12 @@
 #include <cassert>
 #include <vector>
 #include <limits>
+
+#ifdef _MSC_VER
+#include <unordered_map>
+#else
 #include <tr1/unordered_map>
+#endif
 
 /** @addtogroup graph */
 //@{
@@ -40,8 +45,8 @@ namespace g2o {
   class HyperGraph
   {
     public:
-      struct Vertex;
-      struct Edge;
+      class Vertex;
+      class Edge;
       
       //! base hyper graph element, specialized in vertex and edge
       struct HyperGraphElement {

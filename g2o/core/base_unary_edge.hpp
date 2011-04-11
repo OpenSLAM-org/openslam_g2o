@@ -49,18 +49,15 @@ void BaseUnaryEdge<D, E, VertexXiType>::linearizeOplus()
   vi->lockQuadraticForm();
 #endif
 
-
-
   const double delta = 1e-9;
   const double scalar = 1.0 / (2*delta);
   ErrorVector error1;
   ErrorVector errorBeforeNumeric = _error;
 
-  int vi_dim = vi->Dimension;
-  double add_vi[vi_dim];
-  std::fill(add_vi, add_vi + vi_dim, 0.0);
+  double add_vi[VertexXiType::Dimension];
+  std::fill(add_vi, add_vi + VertexXiType::Dimension, 0.0);
   // add small step along the unit vector in each dimension
-  for (int d = 0; d < vi_dim; ++d) {
+  for (int d = 0; d < VertexXiType::Dimension; ++d) {
     vi->push();
     add_vi[d] = delta;
     vi->oplus(add_vi);

@@ -28,19 +28,18 @@ namespace g2o
 /**
  * \brief This is a solver for "structure-only" optimization"
  *
- * Given the problem of landmark-based SLAM or bundle adjustment, this class performs
- * optimization on the landmarks while the poses are kept fixed. This can be done very
- * efficiently, since the position on th landmarks are indepdented given the poses are
- * known.
+ * Given the problem of landmark-based SLAM or bundle adjustment, this class 
+ * performs optimization on the landmarks while the poses are kept fixed. This 
+ * can be done very efficiently, since the position on the landmarks are 
+ * indepdented given the poses are known.
  *
- * This class slightly misuses the API of g2o. It is designed in a way, it can work
- * on the very same graph which reflects the problem of landmark-based SLAM, or bundle
- * adjustment and which is meant to be solved using the Schur complement. Thus, it can
- * be called just before or after joint-optimization without the need of additional
- * setup.
+ * This class slightly misuses the API of g2o. It is designed in a way, it can 
+ * work on the very same graph which reflects the problem of landmark-based 
+ * SLAM, bundle adjustment and which is meant to be solved using the Schur 
+ * complement. Thus, it can be called just before or after joint-optimization 
+ * without the need of additional setup.
  *
- * Therefore, it is assumed that the graph has the following structure:
- *  - ...
+ * This class is still considered as being experimentally!
  */
 template <int PointDoF>
 class StructureOnlySolver
@@ -53,9 +52,7 @@ public:
 
   void calc(g2o::HyperGraph::VertexIDMap & vertices,
             int num_iters,
-            list<int> & nan_list,
-            double step_factor = 0.75,
-            double min_step_length = 0.1)
+            int num_max_trials=10)
   {
     double chi2_sum=0;
     double old_chi2_sum=0;
@@ -82,6 +79,13 @@ public:
       double chi2 = 0;
 
 
+      double mu = 0.01;
+      double nu = 2;
+
+
+
+
+
       for (g2o::HyperGraph::EdgeSet::iterator it_t=track.begin();
            it_t!=track.end(); ++it_t)
       {
@@ -89,10 +93,7 @@ public:
             = dynamic_cast<g2o::OptimizableGraph::Edge *>(*it_t);
 
         e->computeError();
-        if(e->robustKernel())
-        {
-          e->robustifyError();
-        }
+
         chi2 += e->chi2();
       }
 
@@ -136,10 +137,7 @@ public:
             // Fix frame to prevent g2o to compute its Jacobian
 
             e->computeError();
-            if(e->robustKernel())
-            {
-              e->robustifyError();
-            }
+
             e->linearizeOplus();
 
 
@@ -150,73 +148,111 @@ public:
             frame_v->setFixed(remember_fix_status);
           }
 
-          Matrix<double,PointDoF,1> b(v->bData());
+          Matrix<double,PointDoF,1> b
+              = Matrix<double,PointDoF,1>(v->bData());
 
-          if (b.norm()<0.0000000000000000001)
+          if (b.norm()<0.001)
           {
             stop = true;
             break;
           }
-          Matrix<double,PointDoF,1> delta_p;
 
-          delta_p = H_pp.ldlt().solve(b);
+
 
           double new_chi2 = 0;
 
           double new_max_err=0;
+          int trial=0;
 
-          double step_length = 1.;
+
           do
           {
+            Matrix<double,PointDoF,PointDoF> H_pp_mu
+                = mu*Matrix<double,PointDoF,PointDoF>::Identity()+H_pp;
+
+
+
+
+
+
+
+            LDLT<Matrix<double,PointDoF,PointDoF> > Chol_H_pp(H_pp_mu);
+            Matrix<double,PointDoF,1> delta_p;
+
+            delta_p
+                =  Chol_H_pp.solve(b);
+
+
+
             v->push();
 
-            Matrix<double,PointDoF,1> delta_p_times_length
-                = delta_p*step_length;
-            v->oplus(&(delta_p_times_length[0]));
+
+            v->oplus(&(delta_p[0]));
             for (g2o::HyperGraph::EdgeSet::iterator it_t=track.begin();
                  it_t!=track.end(); ++it_t)
             {
               g2o::OptimizableGraph::Edge * e
                   = dynamic_cast<g2o::OptimizableGraph::Edge *>(*it_t);
               e->computeError();
-              if(e->robustKernel())
-              {
-                e->robustifyError();
-              }
+
+
+
               new_chi2 += e->chi2();
-            }
-            if (isnan(new_chi2))
-            {
-              v->discardTop();
-              nan_list.push_back(v->id());
 
-              rho = -1;
-              break;
+
 
             }
+            assert(isnan(new_chi2)==false);
+//            if (isnan(new_chi2))
+//            {
+//              cerr  << b.transpose() << endl;
+//              cerr  <<H_pp_mu << endl;
+//              cerr  << mu << endl;
+//              cerr  << delta_p.transpose() << endl;
+//              cerr  << trial << endl;
+//              assert(false);
+//            }
+
             rho = (chi2-new_chi2);
             if (rho>0)
             {
               v->discardTop();
               max_err = new_max_err;
               chi2 = new_chi2;
+
+              mu *= 1./3.;
+              nu = 2.;
+
+
+
+              trial=0;
+
               break;
             }
             else
             {
               v->pop();
-              step_length *= step_factor;
-            }
-          }while(step_length>=min_step_length);
 
-          if (rho<=0)
+              mu *= nu;
+              nu *= 2.;
+
+              ++trial;
+              if (trial>=num_max_trials)
+              {
+                stop=true;
+                break;
+              }
+            }
+          }while(!stop);
+
+          if (stop)
             break;
         }
       }
       chi2_sum += chi2;
     }
     if (_verbose>0)
-      std::cout << " chi vs. new_chi2 "
+      std::cerr << " chi vs. new_chi2 "
                 << old_chi2_sum
                 << " vs. "
                 << chi2_sum

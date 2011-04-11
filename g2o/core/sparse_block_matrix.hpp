@@ -271,7 +271,7 @@ namespace g2o {
 #   ifdef _OPENMP
 #   pragma omp parallel for default (shared)
 #   endif
-    for (size_t i=0; i<_blockCols.size(); i++){
+    for (int i=0; i < static_cast<int>(_blockCols.size()); i++){
       int destOffset = colBaseOfBlock(i);
       for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=_blockCols[i].begin(); 
           it!=_blockCols[i].end(); 
@@ -351,17 +351,17 @@ namespace g2o {
 
   template <class MatrixType>
   std::ostream& operator << (std::ostream& os, const SparseBlockMatrix<MatrixType>& m){
-    os << "RBI: " << m._rowBlockIndices.size();
-    for (size_t i=0; i<m._rowBlockIndices.size(); i++)
-      os << " " << m._rowBlockIndices[i];
+    os << "RBI: " << m.rowBlockIndices().size();
+    for (size_t i=0; i<m.rowBlockIndices().size(); i++)
+      os << " " << m.rowBlockIndices()[i];
     os << std::endl;
-    os << "CBI: " << m._colBlockIndices.size();
-    for (size_t i=0; i<m._colBlockIndices.size(); i++)
-      os << " " << m._colBlockIndices[i];
+    os << "CBI: " << m.colBlockIndices().size();
+    for (size_t i=0; i<m.colBlockIndices().size(); i++)
+      os << " " << m.colBlockIndices()[i];
     os << std::endl;
 
-    for (size_t i=0; i<m._blockCols.size(); i++){
-      for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=m._blockCols[i].begin(); it!=m._blockCols[i].end(); it++){
+    for (size_t i=0; i<m.blockCols().size(); i++){
+      for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=m.blockCols()[i].begin(); it!=m.blockCols()[i].end(); it++){
         const typename SparseBlockMatrix<MatrixType>::SparseMatrixBlock* b=it->second;
         os << "BLOCK: " << it->first << " " << i << std::endl;
         os << *b << std::endl;

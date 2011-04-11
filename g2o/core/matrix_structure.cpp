@@ -16,6 +16,7 @@
 
 #include "matrix_structure.h"
 
+#include <string>
 #include <vector>
 #include <fstream>
 #include <algorithm>

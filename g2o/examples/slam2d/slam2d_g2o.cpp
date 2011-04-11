@@ -4,7 +4,7 @@
 
 #include "g2o/core/graph_optimizer_sparse.h"
 #include "g2o/core/block_solver.h"
-#include "g2o/solver_csparse/linear_solver_csparse.h"
+#include "g2o/solvers/csparse/linear_solver_csparse.h"
 
 #include <QApplication>
 using namespace std;

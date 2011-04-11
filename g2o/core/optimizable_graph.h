@@ -29,7 +29,7 @@
 
 namespace g2o {
 
-  class SolverProperty;
+  struct SolverProperty;
 
   /**
      @addtogroup g2o
@@ -246,6 +246,10 @@ namespace g2o {
         //! returns the error vector cached after calling the computeError;
         virtual const double* errorData() const = 0;
         virtual double* errorData() = 0;
+
+        //! returns the memory of the information matrix, usable for example with a Eigen::Map<MatrixXd>
+        virtual const double* informationData() const = 0;
+        virtual double* informationData() = 0;
 
         //! computes the chi2 based on the cached error value, only valid after computeError has been called.
         virtual double chi2() const = 0;

@@ -6,6 +6,7 @@ QT4_WRAP_CPP(UI_SOURCES main_window.h)
 ADD_EXECUTABLE(slam2d_g2o
   main_window.cpp
   slam2d_viewer.cpp
+  slam2d_viewer.h
   slam2d_g2o.cpp
   draw_helpers.cpp
   ${UI_HEADERS}

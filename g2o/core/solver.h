@@ -24,7 +24,7 @@
 namespace g2o {
 
 
-  class SparseOptimizer;
+  struct SparseOptimizer;
 
   /**
    * \brief Generic interface for a sparse solver operating on a graph

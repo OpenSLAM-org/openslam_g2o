@@ -21,7 +21,7 @@
 #include <iomanip>
 #include <limits>
 
-#include "optimizable_graph.h"
+#include "base_edge.h"
 
 namespace g2o {
 
@@ -34,7 +34,7 @@ namespace g2o {
    * E - type to represent the measurement
    */
   template <int D, typename E>
-  class BaseMultiEdge : public OptimizableGraph::Edge
+  class BaseMultiEdge : public BaseEdge<D,E>
   {
     public:
       /**
@@ -47,34 +47,16 @@ namespace g2o {
       };
 
     public:
-      static const int Dimension = D;
-      typedef E Measurement;
+      static const int Dimension = BaseEdge<D,E>::Dimension;
+      typedef typename BaseEdge<D,E>::Measurement Measurement;
       typedef MatrixXd JacobianType;
-      typedef Matrix<double, D, 1> ErrorVector;
-      typedef Matrix<double, D, D> InformationType;
+      typedef typename BaseEdge<D,E>::ErrorVector ErrorVector;
+      typedef typename BaseEdge<D,E>::InformationType InformationType;
       typedef Map<MatrixXd, MatrixXd::Flags & AlignedBit ? Aligned : Unaligned > HessianBlockType;
 
-      BaseMultiEdge() : OptimizableGraph::Edge()
+      BaseMultiEdge() : BaseEdge<D,E>()
       {
-        _dimension = D;
       }
-
-      virtual double chi2() const 
-      {
-        return _error.dot(information()*_error);
-      }
-
-      virtual void robustifyError()
-      {
-        double nrm = sqrt(_error.dot(information()*_error));
-        double w = sqrtOfHuberByNrm(nrm,_huberWidth);
-        _error *= w;
-      }
-
-      virtual const double* errorData() const { return _error.data();}
-      virtual double* errorData() { return _error.data();}
-      const ErrorVector& error() const { return _error;}
-      ErrorVector& error() { return _error;}
 
       /**
        * Linearizes the oplus operator in the vertex, and stores
@@ -86,31 +68,19 @@ namespace g2o {
 
       virtual void constructQuadraticForm() ;
 
-      virtual int rank() const {return _dimension;}
-
-      virtual void initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to);
-
       virtual void mapHessianMemory(double* d, int i, int j, bool rowMajor);
 
-      const InformationType& information() const { return _information;}
-      InformationType& information() { return _information;}
-      void setInformation(const InformationType& information) { _information = information;}
-
-      // accessor functions for the measurement represented by the edge
-      const Measurement& measurement() const { return _measurement;}
-      Measurement& measurement() { return _measurement;}
-      void setMeasurement(const Measurement& m) { _measurement = m;}
-
-      const Measurement& inverseMeasurement() const { return _inverseMeasurement;}
-      Measurement& inverseMeasurement() { return _inverseMeasurement;}
-      void setInverseMeasurement(const Measurement& m) { _measurement = m;}
+      using BaseEdge<D,E>::computeError;
 
     protected:
+      using BaseEdge<D,E>::_measurement;
+      using BaseEdge<D,E>::_inverseMeasurement;
+      using BaseEdge<D,E>::_information;
+      using BaseEdge<D,E>::_error;
+      using BaseEdge<D,E>::_vertices;
+      using BaseEdge<D,E>::_dimension;
+
       std::vector<HessianHelper> _hessian;
-      ErrorVector _error;
-      Measurement _measurement;
-      Measurement _inverseMeasurement;
-      InformationType _information;
       std::vector<JacobianType> _jacobianOplus; ///< jacobians of the edge (w.r.t. oplus)
 
     public:

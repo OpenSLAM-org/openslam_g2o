@@ -149,6 +149,7 @@ namespace g2o {
     void setDr()
     {
       // inefficient, just for testing
+      // use simple multiplications and additions for production code in calculating dRdx,y,z
       Matrix3d dRidx, dRidy, dRidz;
       dRidx << 0.0,0.0,0.0,  
 	0.0,0.0,2.0,

@@ -92,11 +92,10 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::linearizeOplus()
 
   if (iNotFixed) {
     //Xi - estimate the jacobian numerically
-    int vi_dim = vi->Dimension;
-    double add_vi[vi_dim];
-    std::fill(add_vi, add_vi + vi_dim, 0.0);
+    double add_vi[VertexXiType::Dimension];
+    std::fill(add_vi, add_vi + VertexXiType::Dimension, 0.0);
     // add small step along the unit vector in each dimension
-    for (int d = 0; d < vi_dim; ++d) {
+    for (int d = 0; d < VertexXiType::Dimension; ++d) {
       vi->push();
       add_vi[d] = delta;
       vi->oplus(add_vi);
@@ -117,11 +116,10 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::linearizeOplus()
 
   if (jNotFixed) {
     //Xj - estimate the jacobian numerically
-    int vj_dim = vj->Dimension;
-    double add_vj[vj_dim];
-    std::fill(add_vj, add_vj + vj_dim, 0.0);
+    double add_vj[VertexXjType::Dimension];
+    std::fill(add_vj, add_vj + VertexXjType::Dimension, 0.0);
     // add small step along the unit vector in each dimension
-    for (int d = 0; d < vj_dim; ++d) {
+    for (int d = 0; d < VertexXjType::Dimension; ++d) {
       vj->push();
       add_vj[d] = delta;
       vj->oplus(add_vj);
@@ -145,13 +143,6 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::linearizeOplus()
   vj->unlockQuadraticForm();
   vi->unlockQuadraticForm();
 #endif
-}
-
-template <int D, typename E, typename VertexXiType, typename VertexXjType>
-void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to)
-{
-  (void) from; (void) to;
-  std::cerr << __PRETTY_FUNCTION__ << " is not implemented, please give implementation in your derived class" << std::endl;
 }
 
 template <int D, typename E, typename VertexXiType, typename VertexXjType>

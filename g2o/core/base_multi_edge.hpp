@@ -137,13 +137,6 @@ void BaseMultiEdge<D, E>::linearizeOplus()
 }
 
 template <int D, typename E>
-void BaseMultiEdge<D, E>::initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to)
-{
-  (void) from; (void) to;
-  std::cerr << __PRETTY_FUNCTION__ << " is not implemented, please give implementation in your derived class" << std::endl;
-}
-
-template <int D, typename E>
 void BaseMultiEdge<D, E>::mapHessianMemory(double* d, int i, int j, bool rowMajor)
 {
   int idx = computeUpperTriangleIndex(i, j);
@@ -164,7 +157,7 @@ void BaseMultiEdge<D, E>::mapHessianMemory(double* d, int i, int j, bool rowMajo
 template <int D, typename E>
 void BaseMultiEdge<D, E>::resize(size_t size)
 {
-  OptimizableGraph::Edge::resize(size);
+  BaseEdge<D,E>::resize(size);
   int n = (int)_vertices.size();
   int maxIdx = (n * (n-1))/2;
   assert(maxIdx >= 0);

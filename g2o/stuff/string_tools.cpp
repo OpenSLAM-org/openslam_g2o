@@ -18,11 +18,14 @@
 #include "os_specific.h"
 #include "macros.h"
 
+#include <cctype>
+#include <string>
 #include <cstdarg>
 #include <cstring>
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
+#include <iterator>
 
 #ifdef UNIX
 #include <wordexp.h>

@@ -25,7 +25,7 @@ namespace g2o {
 
   // forward decl
   class Solver;
-  class SparseOptimizer;
+  struct SparseOptimizer;
 
   /**
    * \brief base for allocating a solver

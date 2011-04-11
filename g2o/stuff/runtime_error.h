@@ -20,6 +20,8 @@
 #include <exception>
 #include <string>
 
+#include "g2o/stuff/macros.h"
+
 /**
  * \brief a run time error exception
  */
@@ -30,7 +32,7 @@ class RuntimeError : public std::exception
      * constructor which allows to give a error message
      * with printf like syntax
      */
-    explicit RuntimeError(const char* fmt, ...)  __attribute__ ((format (printf, 2, 3)));
+    explicit RuntimeError(const char* fmt, ...) G2O_ATTRIBUTE_FORMAT23;
     virtual ~RuntimeError() throw();
     virtual const char* what() const throw() {return _errorMsg.c_str();}
 

@@ -16,6 +16,8 @@
 
 #include "hyper_graph_action.h"
 
+#include <iostream>
+
 namespace g2o {
   using namespace std;
 
@@ -145,7 +147,7 @@ namespace g2o {
     _name="draw";
   }
 
-  void applyAction(OptimizableGraph* graph, HyperGraphElementAction* action, HyperGraphElementAction::Parameters* params, const std::string& typeName)
+  void applyAction(HyperGraph* graph, HyperGraphElementAction* action, HyperGraphElementAction::Parameters* params, const std::string& typeName)
   {
     for (HyperGraph::VertexIDMap::iterator it=graph->vertices().begin(); 
         it!=graph->vertices().end(); it++){

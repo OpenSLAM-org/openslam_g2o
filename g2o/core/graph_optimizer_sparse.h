@@ -30,13 +30,13 @@ class ActivePathCostFunction;
 
 namespace g2o {
 
-  class G2OBatchStatistics;
+  struct G2OBatchStatistics;
 
   struct SparseOptimizer : public OptimizableGraph {
 
     enum Method{GaussNewton, LevenbergMarquardt};
 
-    friend struct ActivePathCostFunction;
+    friend class ActivePathCostFunction;
 
     // Attention: _solver & _statistics is own by SparseOptimizer and will be
     // deleted in its destructor.

@@ -1,16 +1,16 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
+//
 // g2o is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
 // by the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // g2o is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -33,10 +33,10 @@ double BaseVertex<D, T>::solveDirect(double lambda) {
   Matrix <double, D, D> tempA=_hessian + Matrix <double, D, D>::Identity()*lambda;
   Matrix <double, D, 1> dx=tempA.inverse()*_b;
   double det=tempA.determinant();
-  if (std::isnan(det) || det<std::numeric_limits<double>::epsilon())
+  if (g2o_isnan(det) || det < std::numeric_limits<double>::epsilon())
     return det;
   double dxv [D];
-  for (int i=0; i<D; i++) 
+  for (int i=0; i<D; i++)
     dxv[i]=dx[i];
   oplus(dxv);
   return det;

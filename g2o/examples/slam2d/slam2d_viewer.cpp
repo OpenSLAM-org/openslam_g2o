@@ -1,8 +1,8 @@
 #include "slam2d_viewer.h"
 
 #include "draw_helpers.h"
-#include "g2o/types_slam2d/vertex_se2.h"
-#include "g2o/types_slam2d/vertex_point_xy.h"
+#include "g2o/types/slam2d/vertex_se2.h"
+#include "g2o/types/slam2d/vertex_point_xy.h"
 #include "g2o/core/graph_optimizer_sparse.h"
 
 #include <Eigen/Core>

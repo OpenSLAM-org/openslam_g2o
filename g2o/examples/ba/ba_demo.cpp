@@ -23,8 +23,10 @@
 #include "g2o/core/graph_optimizer_sparse.h"
 #include "g2o/core/block_solver.h"
 #include "g2o/core/solver.h"
-#include "g2o/solver_cholmod/linear_solver_cholmod.h"
-#include "g2o/types_sba/types_six_dof_expmap.h"
+#include "g2o/solvers/cholmod/linear_solver_cholmod.h"
+#include "g2o/solvers/cholmod/linear_solver_cholmod.h"
+#include "g2o/solvers/dense/linear_solver_dense.h"
+#include "g2o/types/sba/types_six_dof_expmap.h"
 #include "g2o/math_groups/se3quat.h"
 #include "g2o/core/structure_only_solver.h"
 
@@ -72,35 +74,72 @@ double Sample::gaussian(double sigma)
 
 int main(int argc, const char* argv[])
 {
-  if (argc<5)
+  if (argc<2)
   {
     cout << endl;
     cout << "Please type: " << endl;
-    cout << "ba_demo [PIXEL_NOISE] [OUTLIER RATIO] [ROBUST_KERNEL] [STRUCTURE_ONLY]" << endl;
+    cout << "ba_demo [PIXEL_NOISE] [OUTLIER RATIO] [ROBUST_KERNEL] [STRUCTURE_ONLY] [DENSE]" << endl;
     cout << endl;
     cout << "PIXEL_NOISE: noise in image space (E.g.: 1)" << endl;
-    cout << "OUTLIER_RATIO: probability of spuroius observation  (E.g.: 0.1)" << endl;
-    cout << "ROBUST_KERNEL: use robust kernel (0 or 1)" << endl;
-    cout << "STRUCTURE_ONLY: performe structure-only BA to get better point initializations (0 or 1)" << endl;
+    cout << "OUTLIER_RATIO: probability of spuroius observation  (default: 0.0)" << endl;
+    cout << "ROBUST_KERNEL: use robust kernel (0 or 1; default: 0==false)" << endl;
+    cout << "STRUCTURE_ONLY: performe structure-only BA to get better point initializations (0 or 1; default: 0==false)" << endl;
+    cout << "DENSE: Use dense solver (0 or 1; default: 0==false)" << endl;
     cout << endl;
-    cout << "Not if OUTLIER_RATIO is above 0, ROBUST_KERNEL should be set to 1." << endl;
+    cout << "Note, if OUTLIER_RATIO is above 0, ROBUST_KERNEL should be set to 1==true." << endl;
     cout << endl;
     exit(0);
   }
 
   double PIXEL_NOISE = atof(argv[1]);
-  double OUTLIER_RATIO = atof(argv[2]);
-  bool ROBUST_KERNEL = atof(argv[3]);
-  bool STRUCTURE_ONLY = atof(argv[4]);
+
+  double OUTLIER_RATIO = 0.0;
+
+  if (argc>2)
+  {
+    OUTLIER_RATIO = atof(argv[2]);
+  }
+
+  bool ROBUST_KERNEL = false;
+  if (argc>3)
+  {
+    ROBUST_KERNEL = atof(argv[3]);
+  }
+  bool STRUCTURE_ONLY = false;
+  if (argc>4)
+  {
+    STRUCTURE_ONLY = atof(argv[4]);
+  }
+
+  bool DENSE = false;
+  if (argc>5)
+  {
+    DENSE = atof(argv[5]);
+  }
+
+  cout << "PIXEL_NOISE: " <<  PIXEL_NOISE << endl;
+  cout << "OUTLIER_RATIO: " << OUTLIER_RATIO<<  endl;
+  cout << "ROBUST_KERNEL: " << ROBUST_KERNEL << endl;
+  cout << "STRUCTURE_ONLY: " << STRUCTURE_ONLY<< endl;
+  cout << "DENSE: "<<  DENSE << endl;
+
 
 
   g2o::SparseOptimizer optimizer;
   optimizer.setMethod(g2o::SparseOptimizer::LevenbergMarquardt);
   optimizer.setVerbose(false);
-
-  g2o::BlockSolver_6_3::LinearSolverType * linearSolver
-      = new g2o::LinearSolverCholmod<g2o
-      ::BlockSolver_6_3::PoseMatrixType>();
+  g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
+  if (DENSE)
+  {
+        linearSolver= new g2o::LinearSolverDense<g2o
+        ::BlockSolver_6_3::PoseMatrixType>();
+  }
+  else
+  {
+    linearSolver
+        = new g2o::LinearSolverCholmod<g2o
+        ::BlockSolver_6_3::PoseMatrixType>();
+  }
 
 
   g2o::BlockSolver_6_3 * solver_ptr
@@ -131,7 +170,7 @@ int main(int argc, const char* argv[])
   {
 
 
-    Vector3d trans(i*0.5-1.,0,0);
+    Vector3d trans(i*0.04-1.,0,0);
 
     Eigen:: Quaterniond q;
     q.setIdentity();
@@ -188,7 +227,6 @@ int main(int argc, const char* argv[])
         + Vector3d(Sample::gaussian(1),
                    Sample::gaussian(1),
                    Sample::gaussian(1));
-
 
 
 
@@ -264,8 +302,8 @@ int main(int argc, const char* argv[])
 
         sum_diff2 += diff.dot(diff);
       }
-      else
-        cout << "Point: " << point_id <<  "has at least one spurious observation" <<endl;
+     // else
+     //   cout << "Point: " << point_id <<  "has at least one spurious observation" <<endl;
 
 
       optimizer.addVertex(v_p);
@@ -295,48 +333,10 @@ int main(int argc, const char* argv[])
   if (STRUCTURE_ONLY)
   {
     cout << "Performing structure-only BA:"   << endl;
-    list<int> nan_list;
     structure_only_ba.setVerbose(true);
     structure_only_ba.calc(optimizer.vertices(),
-                           10,
-                           nan_list);
+                           10);
 
-
-    for (list<int>::iterator it = nan_list.begin();
-         it != nan_list.end(); ++it)
-    {
-      cout << "delete evil point" << *it << endl;
-
-      g2o::HyperGraph::Vertex * v
-          = optimizer.vertices().find(*it)->second;
-
-      g2o::HyperGraph::EdgeSet & e_set
-          = v->edges();
-
-      for (g2o::HyperGraph::EdgeSet::iterator
-           it_e = e_set.begin();
-           it_e != e_set.end(); ++it_e)
-      {
-        g2o::HyperGraph::Edge * e = *it_e;
-        std::vector<g2o::HyperGraph::Vertex*>&  verts = e->vertices();
-        for (size_t i=0; i<verts.size(); ++i)
-        {
-          if (verts[i]==v)
-            continue;
-          verts[i]->edges().erase(e);
-        }
-
-        optimizer.edges().erase(e);
-
-      }
-
-      optimizer.vertices().erase(*it);
-      pointid_2_trueid.erase(*it);
-
-    }
-
-    if (nan_list.size()>0)
-      optimizer.initializeOptimization();
 
   }
 

@@ -29,7 +29,11 @@ int vasprintf(char** strp, const char* fmt, va_list ap)
     return -1;
 
   while (1) {
+#ifdef _MSC_VER
+    n = vsnprintf_s(p, size, size - 1, fmt, ap);
+#else
     n = vsnprintf(p, size, fmt, ap);
+#endif
     if (n > -1 && n < size) {
       *strp = p;
       return n;

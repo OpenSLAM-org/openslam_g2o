@@ -349,7 +349,11 @@ bool BlockSolver<Traits>::solve(){
 
       // helper array for OpenMP parallel
       size_t tmpIdx = 0;
+#     ifdef _MSC_VER
+      OptimizableGraph::Edge* tmpEdges = new OptimizableGraph::Edge*[vedges.size()];
+#     else
       OptimizableGraph::Edge* tmpEdges[vedges.size()];
+#     endif
       for (HyperGraph::EdgeSet::const_iterator it2=vedges.begin(); it2!=vedges.end(); ++it2) {
         OptimizableGraph::Edge* e2 = static_cast<OptimizableGraph::Edge*>(*it2);
         tmpEdges[tmpIdx++] = e2;
@@ -401,6 +405,9 @@ bool BlockSolver<Traits>::solve(){
         }
         v1->unlockQuadraticForm();
       }
+#     ifdef _MSC_VER
+      delete[] tmpEdges;
+#     endif
     }
   }
   //cerr << "Solve [marginalize] = " <<  get_time()-t << endl;
@@ -483,7 +490,7 @@ bool BlockSolver<Traits>::buildSystem()
 # ifdef _OPENMP
 # pragma omp parallel for default (shared) if (_optimizer->indexMapping().size() > 1000)
 # endif
-  for (size_t i = 0; i < _optimizer->indexMapping().size(); ++i) {
+  for (int i = 0; i < static_cast<int>(_optimizer->indexMapping().size()); ++i) {
     OptimizableGraph::Vertex* v=_optimizer->indexMapping()[i];
     assert(v);
     v->clearQuadraticForm();
@@ -500,7 +507,7 @@ bool BlockSolver<Traits>::buildSystem()
 # ifdef _OPENMP
 # pragma omp parallel for default (shared) if (_optimizer->activeEdges().size() > 100)
 # endif
-  for (size_t k = 0; k < _optimizer->activeEdges().size(); ++k) {
+  for (int k = 0; k < static_cast<int>(_optimizer->activeEdges().size()); ++k) {
     OptimizableGraph::Edge* e = _optimizer->activeEdges()[k];
     e->constructQuadraticForm();
   }
@@ -509,9 +516,8 @@ bool BlockSolver<Traits>::buildSystem()
 # ifdef _OPENMP
 # pragma omp parallel for default (shared) if (_optimizer->indexMapping().size() > 1000)
 # endif
-  for (size_t i = 0; i < _optimizer->indexMapping().size(); ++i) {
+  for (int i = 0; i < static_cast<int>(_optimizer->indexMapping().size()); ++i) {
     OptimizableGraph::Vertex* v=_optimizer->indexMapping()[i];
-
     int iBase = v->colInHessian();
     if (v->marginalized())
       iBase+=_sizePoses;

@@ -20,13 +20,14 @@
 #include <iomanip>
 #include <algorithm>
 #include <iterator>
-#include <sys/time.h>
 #include <cassert>
+#include <algorithm>
 
 #include "estimate_propagator.h"
 #include "solver.h"
 #include "batch_stats.h"
 #include "g2o/stuff/timeutil.h"
+#include "g2o/stuff/macros.h"
 
 namespace g2o{
   using namespace std;
@@ -99,7 +100,7 @@ namespace g2o{
     int maxDim=0;
     for (HyperGraph::VertexIDMap::iterator it=vertices().begin(); it!=vertices().end(); it++){
       OptimizableGraph::Vertex* v=static_cast<OptimizableGraph::Vertex*>(it->second); 
-      maxDim=std::max(maxDim,v->dimension());
+      maxDim = std::max(maxDim,v->dimension());
     }
 
     for (HyperGraph::VertexIDMap::iterator it=vertices().begin(); it!=vertices().end(); it++){
@@ -128,7 +129,7 @@ namespace g2o{
       for (VertexContainer::iterator it=vlist.begin(); it!=vlist.end(); it++){
       OptimizableGraph::Vertex* v = *it;
       if (! v->fixed()){
-        if (v->marginalized()==k){
+        if (static_cast<int>(v->marginalized()) == k){
           v->setTempIndex(i);
           _ivMap[i]=v;
           i++;
@@ -159,7 +160,7 @@ namespace g2o{
       assert(v);
       int dim = v->dimension();
       for (int j = 0; j < dim; ++j){
-        maxDiagonal=std::max(fabs(v->hessian(j,j)),maxDiagonal); 
+        maxDiagonal = std::max(fabs(v->hessian(j,j)),maxDiagonal); 
       }
     }
     return _tau*maxDiagonal;

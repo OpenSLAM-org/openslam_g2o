@@ -17,11 +17,12 @@
 #ifndef HYPER_GRAPH_ACTION_H
 #define HYPER_GRAPH_ACTION_H
 
-#include "optimizable_graph.h"
+#include "hyper_graph.h"
 
 #include <typeinfo>
 #include <iosfwd>
 #include <set>
+#include <string>
 
 namespace g2o {
 
@@ -103,7 +104,7 @@ namespace g2o {
   };
 
 
-  void applyAction(OptimizableGraph* graph, HyperGraphElementAction* action, HyperGraphElementAction::Parameters* parameters=0, const std::string& typeName="");
+  void applyAction(HyperGraph* graph, HyperGraphElementAction* action, HyperGraphElementAction::Parameters* parameters=0, const std::string& typeName="");
 
   // write in gnuplot
   class WriteGnuplotAction: public HyperGraphElementAction{

@@ -19,6 +19,7 @@
 
 #include "optimizable_graph.h"
 #include "creators.h"
+#include "g2o/stuff/macros.h"
 
 #include <Eigen/Core>
 #include <Eigen/LU>

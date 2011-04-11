@@ -22,8 +22,8 @@
 #include "g2o/core/graph_optimizer_sparse.h"
 #include "g2o/core/block_solver.h"
 #include "g2o/core/solver.h"
-#include "g2o/solver_cholmod/linear_solver_cholmod.h"
-#include "g2o/types_icp/types_icp.h"
+#include "g2o/solvers/cholmod/linear_solver_cholmod.h"
+#include "g2o/types/icp/types_icp.h"
 
 using namespace Eigen;
 using namespace std;
@@ -97,7 +97,7 @@ int main()
 
 
   vector<Vector3d> true_points;
-  for (size_t i=0;i<5; ++i)
+  for (size_t i=0;i<1000; ++i)
   {
     true_points.push_back(Vector3d((Sample::uniform()-0.5)*3,
                                    Sample::uniform()-0.5,
@@ -164,13 +164,13 @@ int main()
     nm0.normalize();
     nm1.normalize();
 
-    Edge_V_V_GICP * e 
-        = new Edge_V_V_GICP();
+    Edge_V_V_GICP * e           // new edge with correct cohort for caching
+        = new Edge_V_V_GICP(); 
 
-    e->vertices()[0]          // first viewpoint
+    e->vertices()[0]            // first viewpoint
       = dynamic_cast<OptimizableGraph::Vertex*>(vp0);
 
-    e->vertices()[1]          // second viewpoint
+    e->vertices()[1]            // second viewpoint
       = dynamic_cast<OptimizableGraph::Vertex*>(vp1);
 
     e->measurement().pos0 = pt0;
@@ -187,6 +187,7 @@ int main()
 
     //    e->setRobustKernel(true);
     e->setHuberWidth(0.01);
+
     optimizer.addEdge(e);
   }
 

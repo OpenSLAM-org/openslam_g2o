@@ -17,7 +17,12 @@
 #ifndef TIMEUTIL_H
 #define TIMEUTIL_H
 
+#ifdef _WINDOWS
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
+
 #include <string>
 
 /** @addtogroup utils **/
@@ -61,25 +66,28 @@ if (1) {\
 
 namespace g2o {
 
+#ifdef _WINDOWS
+typedef struct timeval {
+  long tv_sec;
+  long tv_usec;
+} timeval;
+int gettimeofday(struct timeval *tv, struct timezone *tz);
+#endif
+
 /**
  * return the current time in seconds since 1. Jan 1970
  */
-inline double get_time() {
+inline double get_time() 
+{
+#ifdef _WINDOWS
+  return 0.0;
+#else
   struct timeval ts; 
   gettimeofday(&ts,0);
   
   return ts.tv_sec + ts.tv_usec*1e-6;
+#endif
 }
-
-/**
- * return the string of a given time
- */
-std::string getTimeAsString(time_t time);
-
-/**
- * return the default string of the current time
- */
-std::string getCurrentTimeAsString();
 
 /**
  * \brief Class to measure the time spent in a scope

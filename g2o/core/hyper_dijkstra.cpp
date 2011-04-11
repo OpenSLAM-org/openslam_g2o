@@ -211,7 +211,7 @@ namespace g2o{
     }
   }
 
-  double UniformCostFunction::operator () (HyperGraph::Edge* edge __attribute__((unused)), HyperGraph::Vertex* from __attribute__((unused)), HyperGraph::Vertex* to __attribute__((unused)))
+  double UniformCostFunction::operator () (HyperGraph::Edge* /*edge*/, HyperGraph::Vertex* /*from*/, HyperGraph::Vertex* /*to*/)
   {
     return 1.;
   }

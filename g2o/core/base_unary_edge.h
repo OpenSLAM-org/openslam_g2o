@@ -21,42 +21,27 @@
 #include <cassert>
 #include <limits>
 
-#include "optimizable_graph.h"
+#include "base_edge.h"
 
 namespace g2o {
 
   using namespace Eigen;
 
   template <int D, typename E, typename VertexXi>
-  class BaseUnaryEdge : public OptimizableGraph::Edge
+  class BaseUnaryEdge : public BaseEdge<D,E>
   {
     public:
-      static const int Dimension = D;
-      typedef E Measurement;
+      static const int Dimension = BaseEdge<D, E>::Dimension;
+      typedef typename BaseEdge<D,E>::Measurement Measurement;
       typedef VertexXi VertexXiType;
       typedef Matrix<double, D, VertexXiType::Dimension> JacobianXiOplusType;
-      typedef Matrix<double, D, 1> ErrorVector;
-      typedef Matrix<double, D, D> InformationType;
+      typedef typename BaseEdge<D,E>::ErrorVector ErrorVector;
+      typedef typename BaseEdge<D,E>::InformationType InformationType;
 
-      BaseUnaryEdge() : OptimizableGraph::Edge()
+      BaseUnaryEdge() : BaseEdge<D,E>()
       {
-        _dimension = D;
         resize(1);
       }
-
-      virtual double chi2() const { return _error.dot(information()*_error);}
-
-      virtual void robustifyError()
-      {
-        double nrm = sqrt(_error.dot(information()*_error));
-        double w = sqrtOfHuberByNrm(nrm,_huberWidth);
-        _error *= w;
-      }
-
-      virtual const double* errorData() const { return _error.data();}
-      virtual double* errorData() { return _error.data();}
-      const ErrorVector& error() const { return _error;}
-      ErrorVector& error() { return _error;}
 
       /**
        * Linearizes the oplus operator in the vertex, and stores
@@ -69,33 +54,22 @@ namespace g2o {
 
       virtual void constructQuadraticForm();
 
-      virtual int rank() const {return _dimension;}
-
       virtual void initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to);
 
       virtual void mapHessianMemory(double*, int, int, bool) {assert(0 && "BaseUnaryEdge does not map memory of the Hessian");}
 
-      const InformationType& information() const { return _information;}
-      InformationType& information() { return _information;}
-      void setInformation(const InformationType& information) { _information = information;}
-
-      // accessor functions for the measurement represented by the edge
-      const Measurement& measurement() const { return _measurement;}
-      Measurement& measurement() { return _measurement;}
-      void setMeasurement(const Measurement& m) { _measurement = m;}
-
-      const Measurement& inverseMeasurement() const { return _inverseMeasurement;}
-      Measurement& inverseMeasurement() { return _inverseMeasurement;}
-      void setInverseMeasurement(const Measurement& im) { _inverseMeasurement = im;}
+      using BaseEdge<D,E>::resize;
+      using BaseEdge<D,E>::computeError;
 
     protected:
+      using BaseEdge<D,E>::_measurement;
+      using BaseEdge<D,E>::_inverseMeasurement;
+      using BaseEdge<D,E>::_information;
+      using BaseEdge<D,E>::_error;
+      using BaseEdge<D,E>::_vertices;
+      using BaseEdge<D,E>::_dimension;
 
-      Measurement _measurement;
-      Measurement _inverseMeasurement;
-      InformationType _information;
       JacobianXiOplusType _jacobianOplusXi;
-
-      ErrorVector        _error;
 
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW

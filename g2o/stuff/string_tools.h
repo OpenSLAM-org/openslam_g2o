@@ -99,12 +99,12 @@ OutputIterator readFloats(const char* str, OutputIterator out)
  * format a string and return a std::string.
  * Format is just like printf, see man 3 printf
  */
-std::string formatString(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
+std::string formatString(const char* fmt, ...) G2O_ATTRIBUTE_FORMAT12;
 
 /**
  * replacement function for sprintf which fills a std::string instead of a char*
  */
-int strPrintf(std::string& str, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+int strPrintf(std::string& str, const char* fmt, ...) G2O_ATTRIBUTE_FORMAT23;
 
 /**
  * convert a string into an other type.

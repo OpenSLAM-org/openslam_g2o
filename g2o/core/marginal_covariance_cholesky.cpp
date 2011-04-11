@@ -90,7 +90,11 @@ void MarginalCovarianceCholesky::computeCovariance(const std::vector<Optimizable
     OptimizableGraph::Vertex* v = vertices[i];
     int vdim = v->dimension();
     int base = v->colInHessian();
+#ifdef _MSC_VER
+    double* cov = new double[vdim * vdim];
+#else
     double cov[vdim * vdim];
+#endif
     for (int rr = 0; rr < vdim; ++rr)
       for (int cc = rr; cc < vdim; ++cc) {
         int r = _perm ? _perm[rr + base] : rr + base; // apply permutation
@@ -105,6 +109,9 @@ void MarginalCovarianceCholesky::computeCovariance(const std::vector<Optimizable
           cov[cc*vdim + rr] = foundIt->second;
       }
     v->setUncertainty(cov);
+#ifdef _MSC_VER
+    delete[] cov;
+#endif
   }
 }
 

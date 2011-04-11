@@ -1,9 +1,11 @@
 #include "sparse_helper.h"
 
+#include <string>
 #include <fstream>
 #include <iomanip>
 #include <vector>
 #include <algorithm>
+
 using namespace std;
 
 namespace g2o {

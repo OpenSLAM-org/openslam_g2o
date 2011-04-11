@@ -23,7 +23,12 @@
 #include <map>
 #include <set>
 #include <limits>
+
+#ifdef _MSC_VER
+#include <unordered_map>
+#else
 #include <tr1/unordered_map>
+#endif
 
 namespace g2o {
 
@@ -83,8 +88,8 @@ namespace g2o {
        */
       class AdjacencyMapEntry {
         public:
-          friend struct EstimatePropagator;
-          friend struct PriorityQueue;
+          friend class EstimatePropagator;
+          friend class PriorityQueue;
           AdjacencyMapEntry();
           void reset();
           OptimizableGraph::Vertex* child() const {return _child;}
