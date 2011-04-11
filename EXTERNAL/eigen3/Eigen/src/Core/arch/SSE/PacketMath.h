@@ -110,22 +110,8 @@ template<> struct unpacket_traits<Packet4f> { typedef float  type; enum {size=4}
 template<> struct unpacket_traits<Packet2d> { typedef double type; enum {size=2}; };
 template<> struct unpacket_traits<Packet4i> { typedef int    type; enum {size=4}; };
 
-#ifdef __GNUC__
-// Sometimes GCC implements _mm_set1_p* using multiple moves,
-// that is inefficient :( (e.g., see gemm_pack_rhs)
-template<> EIGEN_STRONG_INLINE Packet4f pset1<Packet4f>(const float&  from) {
-  Packet4f res = _mm_set_ss(from);
-  return vec4f_swizzle1(res,0,0,0,0);
-}
-template<> EIGEN_STRONG_INLINE Packet2d pset1<Packet2d>(const double&  from) {
-  // NOTE the SSE3 intrinsic _mm_loaddup_pd is never faster but sometimes much slower
-  Packet2d res = _mm_set_sd(from);
-  return vec2d_swizzle1(res, 0, 0);
-}
-#else
 template<> EIGEN_STRONG_INLINE Packet4f pset1<Packet4f>(const float&  from) { return _mm_set1_ps(from); }
 template<> EIGEN_STRONG_INLINE Packet2d pset1<Packet2d>(const double& from) { return _mm_set1_pd(from); }
-#endif
 template<> EIGEN_STRONG_INLINE Packet4i pset1<Packet4i>(const int&    from) { return _mm_set1_epi32(from); }
 
 template<> EIGEN_STRONG_INLINE Packet4f plset<float>(const float& a) { return _mm_add_ps(pset1<Packet4f>(a), _mm_set_ps(3,2,1,0)); }
@@ -245,29 +231,52 @@ template<> EIGEN_STRONG_INLINE Packet4i pload<Packet4i>(const int*     from) { E
 // a correct instruction dependency.
 // TODO: do the same for MSVC (ICC is compatible)
 // NOTE: with the code below, MSVC's compiler crashes!
+
+#if defined(__GNUC__) && defined(__i386__)
+  // bug 195: gcc/i386 emits weird x87 fldl/fstpl instructions for _mm_load_sd
+  #define EIGEN_AVOID_CUSTOM_UNALIGNED_LOADS 1
+#elif defined(__clang__)
+  // bug 201: Segfaults in __mm_loadh_pd with clang 2.8
+  #define EIGEN_AVOID_CUSTOM_UNALIGNED_LOADS 1
+#else
+  #define EIGEN_AVOID_CUSTOM_UNALIGNED_LOADS 0
+#endif
+
 template<> EIGEN_STRONG_INLINE Packet4f ploadu<Packet4f>(const float* from)
 {
   EIGEN_DEBUG_UNALIGNED_LOAD
+#if EIGEN_AVOID_CUSTOM_UNALIGNED_LOADS
+  return _mm_loadu_ps(from);
+#else
   __m128d res;
   res =  _mm_load_sd((const double*)(from)) ;
   res =  _mm_loadh_pd(res, (const double*)(from+2)) ;
   return _mm_castpd_ps(res);
+#endif
 }
 template<> EIGEN_STRONG_INLINE Packet2d ploadu<Packet2d>(const double* from)
 {
   EIGEN_DEBUG_UNALIGNED_LOAD
+#if EIGEN_AVOID_CUSTOM_UNALIGNED_LOADS
+  return _mm_loadu_pd(from);
+#else
   __m128d res;
   res = _mm_load_sd(from) ;
   res = _mm_loadh_pd(res,from+1);
   return res;
+#endif
 }
 template<> EIGEN_STRONG_INLINE Packet4i ploadu<Packet4i>(const int* from)
 {
   EIGEN_DEBUG_UNALIGNED_LOAD
+#if EIGEN_AVOID_CUSTOM_UNALIGNED_LOADS
+  return _mm_loadu_si128(reinterpret_cast<const Packet4i*>(from));
+#else
   __m128d res;
   res =  _mm_load_sd((const double*)(from)) ;
   res =  _mm_loadh_pd(res, (const double*)(from+2)) ;
   return _mm_castpd_si128(res);
+#endif
 }
 #endif
 
@@ -295,6 +304,19 @@ template<> EIGEN_STRONG_INLINE void pstoreu<double>(double* to, const Packet2d& 
 }
 template<> EIGEN_STRONG_INLINE void pstoreu<float>(float*  to, const Packet4f& from) { EIGEN_DEBUG_UNALIGNED_STORE pstoreu((double*)to, _mm_castps_pd(from)); }
 template<> EIGEN_STRONG_INLINE void pstoreu<int>(int*      to, const Packet4i& from) { EIGEN_DEBUG_UNALIGNED_STORE pstoreu((double*)to, _mm_castsi128_pd(from)); }
+
+// some compilers might be tempted to perform multiple moves instead of using a vector path.
+template<> EIGEN_STRONG_INLINE void pstore1<Packet4f>(float* to, const float& a)
+{
+  Packet4f pa = _mm_set_ss(a);
+  pstore(to, vec4f_swizzle1(pa,0,0,0,0));
+}
+// some compilers might be tempted to perform multiple moves instead of using a vector path.
+template<> EIGEN_STRONG_INLINE void pstore1<Packet2d>(double* to, const double& a)
+{
+  Packet2d pa = _mm_set_sd(a);
+  pstore(to, vec2d_swizzle1(pa,0,0));
+}
 
 template<> EIGEN_STRONG_INLINE void prefetch<float>(const float*   addr) { _mm_prefetch((const char*)(addr), _MM_HINT_T0); }
 template<> EIGEN_STRONG_INLINE void prefetch<double>(const double* addr) { _mm_prefetch((const char*)(addr), _MM_HINT_T0); }

@@ -50,10 +50,6 @@ template<typename Scalar, int Mode, int Options> void non_projective_only()
   typedef Translation<Scalar,2> Translation2;
   typedef Translation<Scalar,3> Translation3;
 
-  Scalar largeEps = test_precision<Scalar>();
-  if (internal::is_same<Scalar,float>::value)
-    largeEps = 1e-2f;
-
   Vector3 v0 = Vector3::Random(),
           v1 = Vector3::Random();
 
@@ -124,10 +120,6 @@ template<typename Scalar, int Mode, int Options> void transformations()
   typedef DiagonalMatrix<Scalar,3> AlignedScaling3;
   typedef Translation<Scalar,2> Translation2;
   typedef Translation<Scalar,3> Translation3;
-
-  Scalar largeEps = test_precision<Scalar>();
-  if (internal::is_same<Scalar,float>::value)
-    largeEps = 1e-2f;
 
   Vector3 v0 = Vector3::Random(),
     v1 = Vector3::Random(),
@@ -467,5 +459,14 @@ void test_geo_transformations()
     CALL_SUBTEST_3(( transformations<double,Projective,AutoAlign>() ));
     CALL_SUBTEST_3(( transformations<double,Projective,DontAlign>() ));
     CALL_SUBTEST_3(( transform_alignment<double>() ));
+    
+    CALL_SUBTEST_4(( transformations<float,Affine,RowMajor|AutoAlign>() ));
+    CALL_SUBTEST_4(( non_projective_only<float,Affine,RowMajor>() ));
+    
+    CALL_SUBTEST_5(( transformations<double,AffineCompact,RowMajor|AutoAlign>() ));
+    CALL_SUBTEST_5(( non_projective_only<double,AffineCompact,RowMajor>() ));
+
+    CALL_SUBTEST_6(( transformations<double,Projective,RowMajor|AutoAlign>() ));
+    CALL_SUBTEST_6(( transformations<double,Projective,RowMajor|DontAlign>() ));
   }
 }

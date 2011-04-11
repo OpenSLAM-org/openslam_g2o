@@ -95,7 +95,7 @@ struct traits<Map<PlainObjectType, MapOptions, StrideType> >
     HasNoInnerStride = InnerStrideAtCompileTime == 1,
     HasNoOuterStride = StrideType::OuterStrideAtCompileTime == 0,
     HasNoStride = HasNoInnerStride && HasNoOuterStride,
-    IsAligned = int(int(MapOptions)&Aligned)==Aligned,
+    IsAligned = bool(EIGEN_ALIGN) && ((int(MapOptions)&Aligned)==Aligned),
     IsDynamicSize = PlainObjectType::SizeAtCompileTime==Dynamic,
     KeepsPacketAccess = bool(HasNoInnerStride)
                         && ( bool(IsDynamicSize)
@@ -192,14 +192,14 @@ template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int
 inline Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>
   ::Array(const Scalar *data)
 {
-  _set_noalias(Eigen::Map<const Array>(data));
+  this->_set_noalias(Eigen::Map<const Array>(data));
 }
 
 template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
 inline Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>
   ::Matrix(const Scalar *data)
 {
-  _set_noalias(Eigen::Map<const Matrix>(data));
+  this->_set_noalias(Eigen::Map<const Matrix>(data));
 }
 
 #endif // EIGEN_MAP_H

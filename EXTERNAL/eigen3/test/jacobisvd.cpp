@@ -23,6 +23,9 @@
 // License and a copy of the GNU General Public License along with
 // Eigen. If not, see <http://www.gnu.org/licenses/>.
 
+// discard stack allocation as that too bypasses malloc
+#define EIGEN_STACK_ALLOCATION_LIMIT 0
+#define EIGEN_RUNTIME_NO_MALLOC
 #include "main.h"
 #include <Eigen/SVD>
 
@@ -214,6 +217,9 @@ void jacobisvd_method()
 template<typename Scalar>
 EIGEN_DONT_INLINE Scalar zero() { return Scalar(0); }
 
+// workaround aggressive optimization in ICC
+template<typename T> EIGEN_DONT_INLINE  T sub(T a, T b) { return a - b; }
+
 template<typename MatrixType>
 void jacobisvd_inf_nan()
 {
@@ -222,7 +228,7 @@ void jacobisvd_inf_nan()
   JacobiSVD<MatrixType> svd;
   typedef typename MatrixType::Scalar Scalar;
   Scalar some_inf = Scalar(1) / zero<Scalar>();
-  VERIFY((some_inf - some_inf) != (some_inf - some_inf));
+  VERIFY(sub(some_inf, some_inf) != sub(some_inf, some_inf));
   svd.compute(MatrixType::Constant(10,10,some_inf), ComputeFullU | ComputeFullV);
 
   Scalar some_nan = zero<Scalar>() / zero<Scalar>();
@@ -236,6 +242,46 @@ void jacobisvd_inf_nan()
   m = MatrixType::Zero(10,10);
   m(internal::random<int>(0,9), internal::random<int>(0,9)) = some_nan;
   svd.compute(m, ComputeFullU | ComputeFullV);
+}
+
+void jacobisvd_preallocate()
+{
+  Vector3f v(3.f, 2.f, 1.f);
+  MatrixXf m = v.asDiagonal();
+
+  internal::set_is_malloc_allowed(false);
+  VERIFY_RAISES_ASSERT(VectorXf v(10);)
+  JacobiSVD<MatrixXf> svd;
+  internal::set_is_malloc_allowed(true);
+  svd.compute(m);
+  VERIFY_IS_APPROX(svd.singularValues(), v);
+
+  JacobiSVD<MatrixXf> svd2(3,3);
+  internal::set_is_malloc_allowed(false);
+  svd2.compute(m);
+  internal::set_is_malloc_allowed(true);
+  VERIFY_IS_APPROX(svd2.singularValues(), v);
+  VERIFY_RAISES_ASSERT(svd2.matrixU());
+  VERIFY_RAISES_ASSERT(svd2.matrixV());
+  svd2.compute(m, ComputeFullU | ComputeFullV);
+  VERIFY_IS_APPROX(svd2.matrixU(), Matrix3f::Identity());
+  VERIFY_IS_APPROX(svd2.matrixV(), Matrix3f::Identity());
+  internal::set_is_malloc_allowed(false);
+  svd2.compute(m);
+  internal::set_is_malloc_allowed(true);
+
+  JacobiSVD<MatrixXf> svd3(3,3,ComputeFullU|ComputeFullV);
+  internal::set_is_malloc_allowed(false);
+  svd2.compute(m);
+  internal::set_is_malloc_allowed(true);
+  VERIFY_IS_APPROX(svd2.singularValues(), v);
+  VERIFY_IS_APPROX(svd2.matrixU(), Matrix3f::Identity());
+  VERIFY_IS_APPROX(svd2.matrixV(), Matrix3f::Identity());
+  internal::set_is_malloc_allowed(false);
+  svd2.compute(m, ComputeFullU|ComputeFullV);
+  internal::set_is_malloc_allowed(true);
+
+  
 }
 
 void test_jacobisvd()
@@ -287,4 +333,7 @@ void test_jacobisvd()
 
   // Test problem size constructors
   CALL_SUBTEST_7( JacobiSVD<MatrixXf>(10,10) );
+
+  // Check that preallocation avoids subsequent mallocs
+  CALL_SUBTEST_9( jacobisvd_preallocate() );
 }
