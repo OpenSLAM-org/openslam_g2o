@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "config.h"
+#include "g2o/config.h"
 #include "vertex_se2.h"
 #include "vertex_point_xy.h"
 

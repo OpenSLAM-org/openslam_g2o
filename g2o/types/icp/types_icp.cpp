@@ -118,34 +118,36 @@ namespace g2o {
   // [  R0'*R1 | R0 * dR'dx/ddx * 0p1 ]
 
 #ifdef GICP_ANALYTIC_JACOBIANS
+
+  // jacobian defined as:
+  //    f(T0,T1) =  dR0.inv() * T0.inv() * T1 *dR1 * p1
+  //    df/dx0 = [-R0.inv(), d[dR0.inv()]/dq0 * T01 * p1
+  //    df/dx1 = T01 * [R0, d[dR1]/dq1 * p1
   void Edge_V_V_GICP::linearizeOplus()
   {
     VertexSE3* vp0 = static_cast<VertexSE3*>(_vertices[0]);
     VertexSE3* vp1 = static_cast<VertexSE3*>(_vertices[1]);
     
-    Matrix3d R0 = (vp0->estimate().inverse() *  vp1->estimate()).rotation().toRotationMatrix();
-    Vector3d p1 = vp1->estimate().map(measurement().pos1); // in rw coords
+    Matrix3d R0 = vp0->estimate().rotation().toRotationMatrix().transpose();
+    SE3Quat T01 = vp0->estimate().inverse() *  vp1->estimate();
+    Vector3d p1 = measurement().pos1;
     
-    Matrix3d p1diff;
-    // this is dRidx,y,z.transpose()*p1;
-    p1diff << 
-      0,          2.0*p1(2), -2.0*p1(1),
-      -2.0*p1(2), 0,          2.0*p1(0),
-      2.0*p1(1), -2.0*p1(0),  0;
-
     // this could be more efficient
     if (!vp0->fixed())
       {
+        Vector3d p1t = T01.map(p1);
         _jacobianOplusXi.block<3,3>(0,0) = -R0;
-        _jacobianOplusXi.block<3,1>(0,3) = dRidx*R0*p1;
-        _jacobianOplusXi.block<3,1>(0,4) = dRidy*R0*p1;
-        _jacobianOplusXi.block<3,1>(0,5) = dRidz*R0*p1;
+        _jacobianOplusXi.block<3,1>(0,3) = dRidx*p1t;
+        _jacobianOplusXi.block<3,1>(0,4) = dRidy*p1t;
+        _jacobianOplusXi.block<3,1>(0,5) = dRidz*p1t;
       }
 
     if (!vp1->fixed())
       {
         _jacobianOplusXj.block<3,3>(0,0) = R0;
-        _jacobianOplusXj.block<3,3>(0,3) = R0*p1diff;
+        _jacobianOplusXj.block<3,1>(0,3) = T01.map(dRidx.transpose()*p1);
+        _jacobianOplusXj.block<3,1>(0,4) = T01.map(dRidy.transpose()*p1);
+        _jacobianOplusXj.block<3,1>(0,5) = T01.map(dRidz.transpose()*p1);
       }
   }
 #endif

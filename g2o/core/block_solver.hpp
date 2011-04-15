@@ -495,7 +495,6 @@ bool BlockSolver<Traits>::buildSystem()
     assert(v);
     v->clearQuadraticForm();
   }
-  // TODO parallel clear
   _Hpp->clear();
   if (_doSchur) {
     _Hll->clear();

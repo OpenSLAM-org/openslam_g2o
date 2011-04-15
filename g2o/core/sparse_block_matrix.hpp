@@ -46,7 +46,10 @@ namespace g2o {
 
   template <class MatrixType>
   void SparseBlockMatrix<MatrixType>::clear(bool dealloc) {
-    for (size_t i=0; i<_blockCols.size(); i++){
+#   ifdef _OPENMP
+#   pragma omp parallel for default (shared) if (_blockCols.size() > 100)
+#   endif
+    for (int i=0; i < static_cast<int>(_blockCols.size()); ++i) {
       for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=_blockCols[i].begin(); it!=_blockCols[i].end(); it++){
         typename SparseBlockMatrix<MatrixType>::SparseMatrixBlock* b=it->second;
         if (_hasStorage && dealloc)

@@ -17,7 +17,7 @@
 #ifndef EDGE_SE2_POINT_XY_H
 #define EDGE_SE2_POINT_XY_H
 
-#include "config.h"
+#include "g2o/config.h"
 #include "vertex_se2.h"
 #include "vertex_point_xy.h"
 #include "g2o/core/base_binary_edge.h"

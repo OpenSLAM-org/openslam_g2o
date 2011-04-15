@@ -17,7 +17,7 @@
 #ifndef VERTEX_SE2_H
 #define VERTEX_SE2_H
 
-#include "config.h"
+#include "g2o/config.h"
 #include "g2o/core/base_vertex.h"
 #include "g2o/core/hyper_graph_action.h"
 #include "g2o/math_groups/se2.h"

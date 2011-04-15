@@ -132,8 +132,9 @@ SET( G2O_EIGEN3_INCLUDE ${g2o_SOURCE_DIR}/EXTERNAL/eigen3 CACHE PATH "Directory 
 INCLUDE_DIRECTORIES(${g2o_SOURCE_DIR} ${G2O_EIGEN3_INCLUDE})
 
 # Generate config.h 
-configure_file(config.h.in ${PROJECT_BINARY_DIR}/config.h)
+configure_file(config.h.in ${PROJECT_BINARY_DIR}/g2o/config.h)
 include_directories(${PROJECT_BINARY_DIR})
+INSTALL(FILES ${PROJECT_BINARY_DIR}/g2o/config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/g2o)
 
 # Include the subdirectories
 ADD_SUBDIRECTORY(EXTERNAL)
