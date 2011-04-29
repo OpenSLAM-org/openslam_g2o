@@ -86,7 +86,7 @@ namespace g2o {
       return false;
     assert(it->second==v);
     //remove all edges which are entering or leaving v;
-    EdgeSet& tmp=v->edges();
+    EdgeSet tmp = v->edges();
     for (EdgeSet::iterator it=tmp.begin(); it!=tmp.end(); it++){
       if (!removeEdge(*it)){
         assert(0);
