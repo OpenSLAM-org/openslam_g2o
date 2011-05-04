@@ -645,4 +645,13 @@ namespace g2o{
     _forceStopFlag=flag;
   }
 
+  bool SparseOptimizer::removeVertex(Vertex* v)
+  {
+    if (v->tempIndex() >= 0) {
+      clearIndexMapping();
+      _ivMap.clear();
+    }
+    return HyperGraph::removeVertex(v);
+  }
+
 } // end namespace

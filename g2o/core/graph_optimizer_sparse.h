@@ -135,6 +135,8 @@ namespace g2o {
     //! the edges active in the current optimization
     const EdgeContainer& activeEdges() const { return _activeEdges;}
 
+    virtual bool removeVertex(Vertex* v);
+
     /**
      * search for an edge in _activeEdges and return the iterator pointing to it
      * getActiveVertices().end() if not found
