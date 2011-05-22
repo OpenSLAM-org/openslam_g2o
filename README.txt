@@ -2,7 +2,7 @@ g2o - General Graph Optimization
 
 g2o is licensed under LGPL version 3, whereas the GUI g2o_viewer is
 licensed under GPL version 3.
-See the g2o/doc folder for the full text of the licenses.
+See the doc folder for the full text of the licenses.
 
 g2o is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of

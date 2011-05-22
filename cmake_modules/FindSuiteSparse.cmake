@@ -106,7 +106,7 @@ FIND_PATH(CSPARSE_INCLUDE_DIR NAMES cs.h
   /sw/include/ufsparse
   )
 
-FIND_LIBRARY(CSPARSE_LIBRARY NAMES csparse
+FIND_LIBRARY(CSPARSE_LIBRARY NAMES cxsparse
   PATHS
   /usr/lib
   /usr/local/lib

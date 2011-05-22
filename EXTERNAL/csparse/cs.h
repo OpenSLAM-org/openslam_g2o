@@ -13,6 +13,10 @@
 #define CS_DATE "Jan 20, 2009"     /* CSparse release date */
 #define CS_COPYRIGHT "Copyright (c) Timothy A. Davis, 2006-2009"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* --- primary CSparse routines and data structures ------------------------- */
 typedef struct cs_sparse    /* matrix in compressed-column or triplet form */
 {
@@ -141,5 +145,9 @@ csn *cs_ndone (csn *N, cs *C, void *w, void *x, int ok) ;
 #define CS_MARK(w,j) { w [j] = CS_FLIP (w [j]) ; }
 #define CS_CSC(A) (A && (A->nz == -1))
 #define CS_TRIPLET(A) (A && (A->nz >= 0))
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
