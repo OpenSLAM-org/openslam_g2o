@@ -71,7 +71,7 @@ namespace g2o {
       //! accessor functions for the measurement represented by the edge
       const Measurement& measurement() const { return _measurement;}
       Measurement& measurement() { return _measurement;}
-      void setMeasurement(const Measurement& m) { _measurement = m;}
+      virtual void setMeasurement(const Measurement& m) { _measurement = m;}
 
       virtual int rank() const {return _dimension;}
 
@@ -81,7 +81,7 @@ namespace g2o {
        */
       const Measurement& inverseMeasurement() const { return _inverseMeasurement;}
       Measurement& inverseMeasurement() { return _inverseMeasurement;}
-      void setInverseMeasurement(const Measurement& im) { _inverseMeasurement = im;}
+      virtual void setInverseMeasurement(const Measurement& im) { _inverseMeasurement = im;}
 
       virtual void initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to)
       {

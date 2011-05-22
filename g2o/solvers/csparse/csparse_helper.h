@@ -17,9 +17,10 @@
 #ifndef CSPARSE_HELPER_H
 #define CSPARSE_HELPER_H
 
-extern "C" {
-#include <EXTERNAL/csparse/cs.h>
-};
+#ifndef NCOMPLEX
+#define NCOMPLEX
+#endif
+#include <cs.h>
 
 namespace g2o {
 

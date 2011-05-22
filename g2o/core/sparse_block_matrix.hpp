@@ -407,9 +407,6 @@ namespace g2o {
       }
       dest->clear();
     }
-    // for  (size_t i=0; i<n; i++)
-    //   cerr << dest->_rowBlockIndices[i] << endl;
-    // cerr << endl;
     // now ready to permute the columns
     for (size_t i=0; i<n; i++){
       //cerr << PVAR(i) <<  " ";
@@ -417,10 +414,6 @@ namespace g2o {
       for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=_blockCols[i].begin(); 
           it!=_blockCols[i].end(); it++){
         int pj=pinv[it->first];
-        // cerr << PVAR(pi) << " ";
-        // cerr << PVAR(pj) << " " << endl;
-        // cerr << PVAR(i) << " ";
-        // cerr << PVAR(it->first) << " " << endl;
 
         const typename SparseBlockMatrix<MatrixType>::SparseMatrixBlock* s=it->second;
 
@@ -474,9 +467,7 @@ namespace g2o {
     for (size_t i=0; i<_blockCols.size(); ++i){
       int cstart=i ? _colBlockIndices[i-1] : 0;
       int csize=colsOfBlock(i);
-      //cerr << PVAR(csize) << endl;
       for (int c=0; c<csize; c++) {
-        //cerr << PVAR(c+cstart) << endl;
         *Cp=nz;
         for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=_blockCols[i].begin(); it!=_blockCols[i].end(); ++it){
           const typename SparseBlockMatrix<MatrixType>::SparseMatrixBlock* b=it->second;

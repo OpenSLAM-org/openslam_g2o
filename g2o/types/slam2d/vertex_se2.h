@@ -44,6 +44,21 @@ namespace g2o {
         _estimate.rotation().angle()  = normalize_theta(_estimate.rotation().angle() + update[2]);
       }
 
+      virtual bool setEstimateData(const double* est){
+      	_estimate=SE2(est[0], est[1], est[2]);
+      	return true;
+      }
+
+      virtual bool getEstimateData(double* est) const {
+      	Vector3d v=_estimate.toVector();
+      	est[0]=v(0);
+      	est[1]=v(1);
+      	est[2]=v(2);
+      	return true;
+      }
+      
+      virtual int estimateDimension() const { return 3; }
+
       virtual bool read(std::istream& is);
       virtual bool write(std::ostream& os) const;
 

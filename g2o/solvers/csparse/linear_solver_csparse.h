@@ -31,7 +31,7 @@ namespace g2o {
 /**
  * \brief Our C++ version of the csparse struct
  */
-struct CSparseExt : public cs_sparse
+struct CSparseExt : public cs
 {
   CSparseExt()
   {

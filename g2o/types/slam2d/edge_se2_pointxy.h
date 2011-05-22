@@ -37,6 +37,21 @@ namespace g2o {
         _error = (v1->estimate().inverse() * l2->estimate()) - _measurement;
       }
 
+      virtual bool setMeasurementData(const double* d){
+	_measurement[0]=d[0];
+	_measurement[1]=d[1];
+	_inverseMeasurement = -_measurement;
+	return true;
+      }
+
+      virtual bool getMeasurementData(double* d) const{
+	d[0] = _measurement[0];
+	d[1] = _measurement[1];
+	return true;
+      }
+      
+      virtual int measurementDimension() const {return 2;}
+
       virtual bool read(std::istream& is);
       virtual bool write(std::ostream& os) const;
 

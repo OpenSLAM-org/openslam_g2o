@@ -35,6 +35,22 @@ namespace g2o {
         _estimate.setZero();
       }
 
+      virtual bool setEstimateData(const double* est){
+	_estimate[0]=est[0];
+	_estimate[1]=est[1];
+	return true;
+      }
+
+      virtual bool getEstimateData(double* est) const{
+	est[0] = _estimate[0];
+	est[0] = _estimate[1];
+	return true;
+      }
+      
+      virtual int estimateDimension() const { 
+	return 2;
+      }
+
       virtual void oplus(double* update)
       {
         _estimate[0] += update[0];

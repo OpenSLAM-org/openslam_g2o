@@ -1,16 +1,16 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 Kurt Konolige
-// 
+//
 // g2o is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
 // by the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // g2o is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -31,7 +31,7 @@ namespace g2o {
   Matrix3d VertexSCam::dRidx; // differential quat matrices
   Matrix3d VertexSCam::dRidy; // differential quat matrices
   Matrix3d VertexSCam::dRidz; // differential quat matrices
-  Matrix3d VertexSCam::Kcam; 
+  Matrix3d VertexSCam::Kcam;
   double VertexSCam::baseline;
 
   // global initialization
@@ -41,30 +41,51 @@ namespace g2o {
     Factory* factory = Factory::instance();
     factory->registerType("EDGE_V_V_GICP", new HyperGraphElementCreator<Edge_V_V_GICP>);
 
-    Edge_V_V_GICP::dRidx << 0.0,0.0,0.0,  
+    Edge_V_V_GICP::dRidx << 0.0,0.0,0.0,
       0.0,0.0,2.0,
       0.0,-2.0,0.0;
     Edge_V_V_GICP::dRidy  << 0.0,0.0,-2.0,
       0.0,0.0,0.0,
       2.0,0.0,0.0;
-    Edge_V_V_GICP::dRidz  << 0.0,2.0,0.0,  
+    Edge_V_V_GICP::dRidz  << 0.0,2.0,0.0,
       -2.0,0.0,0.0,
       0.0,0.0,0.0;
 
-    VertexSCam::dRidx << 0.0,0.0,0.0,  
+    VertexSCam::dRidx << 0.0,0.0,0.0,
       0.0,0.0,2.0,
       0.0,-2.0,0.0;
     VertexSCam::dRidy  << 0.0,0.0,-2.0,
       0.0,0.0,0.0,
       2.0,0.0,0.0;
-    VertexSCam::dRidz  << 0.0,2.0,0.0,  
+    VertexSCam::dRidz  << 0.0,2.0,0.0,
       -2.0,0.0,0.0,
       0.0,0.0,0.0;
 
   }
 
+  // Copy constructor
+  Edge_V_V_GICP::Edge_V_V_GICP(const Edge_V_V_GICP* e)
+    : BaseBinaryEdge<3, EdgeGICP, VertexSE3, VertexSE3>()
+  {
+    vertices()[0] = e->vertices()[0];
+    vertices()[1] = e->vertices()[1];
 
-  // 
+    measurement().pos0 = e->measurement().pos0;
+    measurement().pos1 = e->measurement().pos1;
+    measurement().normal0 = e->measurement().normal0;
+    measurement().normal1 = e->measurement().normal1;
+    measurement().R0 = e->measurement().R0;
+    measurement().R1 = e->measurement().R1;
+
+    pl_pl = e->pl_pl;
+    cov0 = e->cov0;
+    cov1 = e->cov1;
+
+    _robustKernel = e->_robustKernel;
+    _huberWidth = e->_huberWidth;
+  }
+
+  //
   // Rigid 3D constraint between poses, given fixed point offsets
   //
 
@@ -91,7 +112,7 @@ namespace g2o {
     // don't need this if we don't use it in error calculation (???)
     //    inverseMeasurement() = -measurement();
 
-    measurement().makeRot();  // set up rotation matrices
+    measurement().makeRot0();  // set up rotation matrices
 
     // GICP info matrices
 
@@ -113,30 +134,30 @@ namespace g2o {
   }
 
 
-  // Jacobian 
+  // Jacobian
   // [ -R0'*R1 | R0 * dRdx/ddx * 0p1 ]
   // [  R0'*R1 | R0 * dR'dx/ddx * 0p1 ]
 
 #ifdef GICP_ANALYTIC_JACOBIANS
 
   // jacobian defined as:
-  //    f(T0,T1) =  dR0.inv() * T0.inv() * T1 *dR1 * p1
-  //    df/dx0 = [-R0.inv(), d[dR0.inv()]/dq0 * T01 * p1
-  //    df/dx1 = T01 * [R0, d[dR1]/dq1 * p1
+  //    f(T0,T1) =  dR0.inv() * T0.inv() * (T1 * dR1 * p1 + dt1) - dt0
+  //    df/dx0 = [-I, d[dR0.inv()]/dq0 * T01 * p1]
+  //    df/dx1 = [R0, T01 * d[dR1]/dq1 * p1]
   void Edge_V_V_GICP::linearizeOplus()
   {
     VertexSE3* vp0 = static_cast<VertexSE3*>(_vertices[0]);
     VertexSE3* vp1 = static_cast<VertexSE3*>(_vertices[1]);
-    
-    Matrix3d R0 = vp0->estimate().rotation().toRotationMatrix().transpose();
-    SE3Quat T01 = vp0->estimate().inverse() *  vp1->estimate();
+
+    Matrix3d R0T = vp0->estimate().rotation().toRotationMatrix().transpose();
     Vector3d p1 = measurement().pos1;
-    
+
     // this could be more efficient
     if (!vp0->fixed())
       {
+        SE3Quat T01 = vp0->estimate().inverse() *  vp1->estimate();
         Vector3d p1t = T01.map(p1);
-        _jacobianOplusXi.block<3,3>(0,0) = -R0;
+        _jacobianOplusXi.block<3,3>(0,0) = -Matrix3d::Identity();
         _jacobianOplusXi.block<3,1>(0,3) = dRidx*p1t;
         _jacobianOplusXi.block<3,1>(0,4) = dRidy*p1t;
         _jacobianOplusXi.block<3,1>(0,5) = dRidz*p1t;
@@ -144,10 +165,12 @@ namespace g2o {
 
     if (!vp1->fixed())
       {
-        _jacobianOplusXj.block<3,3>(0,0) = R0;
-        _jacobianOplusXj.block<3,1>(0,3) = T01.map(dRidx.transpose()*p1);
-        _jacobianOplusXj.block<3,1>(0,4) = T01.map(dRidy.transpose()*p1);
-        _jacobianOplusXj.block<3,1>(0,5) = T01.map(dRidz.transpose()*p1);
+        Matrix3d R1 = vp1->estimate().rotation().toRotationMatrix();
+        R0T = R0T*R1;
+        _jacobianOplusXj.block<3,3>(0,0) = R0T;
+        _jacobianOplusXj.block<3,1>(0,3) = R0T*dRidx.transpose()*p1;
+        _jacobianOplusXj.block<3,1>(0,4) = R0T*dRidy.transpose()*p1;
+        _jacobianOplusXj.block<3,1>(0,5) = R0T*dRidz.transpose()*p1;
       }
   }
 #endif
@@ -177,15 +200,15 @@ namespace g2o {
 
 
 
-  VertexSCam::VertexSCam() : 
-    VertexSE3() 
+  VertexSCam::VertexSCam() :
+    VertexSE3()
   {}
 
 
   Edge_XYZ_VSC::Edge_XYZ_VSC()
   {}
 
-
+#ifdef SCAM_ANALYTIC_JACOBIANS
 /**
  * \brief Jacobian for stereo projection
  */
@@ -209,10 +232,10 @@ namespace g2o {
     double py = pc(1);
     double pz = pc(2);
     double ipz2 = 1.0/(pz*pz);
-    if (isnan(ipz2) ) 
-      { 
+    if (isnan(ipz2) )
+      {
 	std::cout << "[SetJac] infinite jac" << std::endl;
-	*(int *)0x0 = 0; 
+	*(int *)0x0 = 0;
       }
 
     double ipz2fx = ipz2*vc->Kcam(0,0); // Fx
@@ -269,7 +292,7 @@ namespace g2o {
     _jacobianOplusXi(1,2) = (pz*dp(1) - py*dp(2))*ipz2fy;
     _jacobianOplusXi(2,2) = (pz*dp(0) - (px-b)*dp(2))*ipz2fx; // right image px
   }
-
+#endif
   bool Edge_XYZ_VSC::read(std::istream&)
   { return false; }
 

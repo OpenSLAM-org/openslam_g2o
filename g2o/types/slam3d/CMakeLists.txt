@@ -1,4 +1,8 @@
 ADD_LIBRARY(types_slam3d SHARED
+  vertex_se3_quat.cpp
+  vertex_se3_quat.h
+  edge_se3_quat.cpp
+  edge_se3_quat.h
   types_six_dof_quat.cpp
   types_six_dof_quat.h
 )

@@ -27,6 +27,7 @@ namespace g2o {
   using namespace Eigen;
 
   typedef Matrix<double, 6, 1> Vector6d;
+  typedef Matrix<double, 7, 1> Vector7d;
 
   class SE3Quat {
    public:
@@ -113,6 +114,25 @@ namespace g2o {
 	return _t[i];
       return _r.coeffs()[i-3];
     }
+
+
+    inline Vector7d toVector() const{
+      Vector7d v;
+      v[0]=_t(0);
+      v[1]=_t(1);
+      v[2]=_t(2);
+      v[3]=_r.x();
+      v[4]=_r.y();
+      v[5]=_r.z();
+      v[6]=_r.w();
+      return v;
+    }
+
+    inline void fromVector(const Vector7d& v){
+      _r=Quaterniond(v[3], v[4], v[5], v[6]);
+      _t=Vector3d(v[0], v[1], v[2]);
+    }
+
 
     Vector6d log() const {
       Vector6d res;

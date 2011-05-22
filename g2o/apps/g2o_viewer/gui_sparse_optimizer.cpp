@@ -26,7 +26,7 @@ namespace g2o {
 
 GuiSparseOptimizer::GuiSparseOptimizer() :
   SparseOptimizer(),
-  viewer(0)
+  viewer(0), dumpScreenshots(false)
 {
 }
 
@@ -34,11 +34,18 @@ GuiSparseOptimizer::~GuiSparseOptimizer()
 {
 }
 
-void GuiSparseOptimizer::postIteration(int)
+void GuiSparseOptimizer::postIteration(int iteration)
 {
   if (viewer) {
     viewer->setUpdateDisplay(true);
     viewer->updateGL();
+
+    if (dumpScreenshots) {
+      viewer->setSnapshotFormat(QString("PNG"));
+      viewer->setSnapshotQuality(-1);
+      viewer->saveSnapshot(QString().sprintf("g2o%.6d.png", iteration), true);
+    }
+
     qApp->processEvents();
   }
 }

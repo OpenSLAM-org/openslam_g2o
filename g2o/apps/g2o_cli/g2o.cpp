@@ -355,7 +355,7 @@ int main(int argc, char** argv)
       }
 
       if (addNextEdge){
-        //cerr << " adding edge " << it->id1 <<  " " << it->id2 << " " << it->mean << endl;
+        //cerr << " adding edge " << e->vertices()[0]->id() <<  " " << e->vertices()[1]->id() << endl;
         if (! optimizer.addEdge(e)) {
           cerr << "Unable to add edge " << e->vertices()[0]->id() << " -> " << e->vertices()[1]->id() << endl;
         } else {
@@ -382,7 +382,7 @@ int main(int argc, char** argv)
               {
                 HyperGraph::VertexSet fromSet;
                 fromSet.insert(from);
-                if (e->initialEstimatePossible(fromSet, to)) {
+                if (e->initialEstimatePossible(fromSet, to) > 0.) {
                   //cerr << "init: " 
                     //<< from->id() << "(" << from->dimension() << ") -> " 
                     //<< to->id() << "(" << to->dimension() << ") " << endl;
@@ -436,7 +436,7 @@ int main(int argc, char** argv)
       }
 
       if (guiOut) {
-        if (vertexCount - lastVisUpdateVertexCount >= updateDisplayEveryN) {
+        if (vertexCount - lastVisUpdateVertexCount >= updateDisplayEveryN && freshlyOptimized) {
           dumpEdges(cout, optimizer);
           lastVisUpdateVertexCount = vertexCount;
         }

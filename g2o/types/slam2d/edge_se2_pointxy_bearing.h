@@ -38,6 +38,19 @@ namespace g2o {
         _error[0] = normalize_theta(_measurement - angle );
       }
 
+      virtual bool setMeasurementData(const double* d) {
+	_measurement=d[0];
+	_inverseMeasurement = -_measurement;
+	return true;
+      }
+
+      virtual bool getMeasurementData(double* d) const {
+	d[0] = _measurement;
+	return true;
+      }
+
+      int measurementDimension() const {return 1;}
+
       virtual bool read(std::istream& is);
       virtual bool write(std::ostream& os) const;
 

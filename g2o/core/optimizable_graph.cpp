@@ -40,6 +40,7 @@ namespace g2o {
     _graph(0), _observation(0), _tempIndex(-1), _fixed(false), _marginalized(false),
     _colInHessian(-1)
   {
+
   }
 
   OptimizableGraph::Vertex::~Vertex()
@@ -52,12 +53,42 @@ namespace g2o {
     // TODO
     return 0;
   }
+  bool OptimizableGraph::Vertex::setEstimateData(const double *)
+  {
+    return false;
+  }
+
+  bool OptimizableGraph::Vertex::getEstimateData(double *) const
+  {
+    return false;
+  }
+
+  int OptimizableGraph::Vertex::estimateDimension() const
+  {
+    return -1;
+  }
 
   OptimizableGraph::Edge::Edge() :
     HyperGraph::Edge(),
     _dimension(-1), _level(0), _robustKernel(false), _huberWidth(1.)
   {
   }
+
+  bool OptimizableGraph::Edge::setMeasurementData(const double *)
+  {
+    return false;
+  }
+
+  bool OptimizableGraph::Edge::getMeasurementData(double *) const
+  {
+    return false;
+  }
+
+  int OptimizableGraph::Edge::measurementDimension() const
+  {
+    return -1;
+  }
+
 
   OptimizableGraph::Edge* OptimizableGraph::Edge::clone() const
   {

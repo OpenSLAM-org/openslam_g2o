@@ -20,4 +20,5 @@ INSTALL(TARGETS solver_csparse
   ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
-INSTALL(FILES linear_solver_csparse.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/g2o/solvers/csparse)
+FILE(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
+INSTALL(FILES ${headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/g2o/solvers/csparse)

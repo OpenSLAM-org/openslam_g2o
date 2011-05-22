@@ -38,6 +38,22 @@ namespace g2o {
         _error = delta.toVector();
       }
 
+      virtual bool setMeasurementData(const double* d) {
+	_measurement=SE2(d[0], d[1], d[2]);
+	_inverseMeasurement = _measurement.inverse();
+	return true;
+      }
+
+      virtual bool getMeasurementData(double* d) const {
+	Vector3d v = _measurement.toVector();
+	d[0] = v[0];
+	d[1] = v[1];
+	d[2] = v[2];
+	return true;
+      }
+
+      int measurementDimension() const {return 3;}
+
       virtual bool read(std::istream& is);
       virtual bool write(std::ostream& os) const;
 

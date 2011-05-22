@@ -98,8 +98,11 @@ namespace g2o {
             */
           VertexVector& vertices() { return _vertices;}
 
+          int id() const {return _id;}
+          void setId(int id_) {_id=id_;}
         protected:
           VertexVector _vertices;
+          int _id; // unique id (to be used in the future)
       };
 
     public:

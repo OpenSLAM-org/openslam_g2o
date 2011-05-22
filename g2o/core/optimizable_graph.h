@@ -141,8 +141,23 @@ namespace g2o {
          */
         virtual double solveDirect(double lambda=0) = 0;
 
-        //! get the i_th element of the estimate
-        //virtual double estimate(int i) const = 0;
+        /**
+         * sets the initial estimate from an array of double
+         * @return true on success
+         */
+        virtual bool setEstimateData(const double* estimate);
+
+        /**
+         * writes the estimater to an array of double
+         * @returns true on success
+         */
+        virtual bool getEstimateData(double* estimate) const ;
+
+        /**
+         * returns the dimension of the extended representation used by get/setEstimate(double*)
+         * -1 if it is not supported
+         */
+        virtual int estimateDimension() const;
 
         //! backup the position of the vertex to a stack
         virtual void push() = 0;
@@ -228,6 +243,18 @@ namespace g2o {
 
         // computes the error of the edge and stores it in an internal structure
         virtual void computeError() = 0;
+
+        //! sets the measurement from an array of double
+	//! @returns true on success
+        virtual bool setMeasurementData(const double* m);
+
+        //! writes the measurement to an array of double
+	//! @returns true on success
+        virtual bool getMeasurementData(double* m) const;
+
+        //! returns the dimension of the measurement in the extended representation which is used
+	//! by get/setMeasurement;
+        virtual int measurementDimension() const;
 
         /**
          * robustify the error of the edge using an robust kernel/M-estimator

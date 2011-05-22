@@ -40,6 +40,7 @@ namespace g2o {
       virtual void postIteration(int);
 
       G2oQGLViewer* viewer;   ///< the viewer which visualizes the graph
+      bool dumpScreenshots;
   };
 
 } // end namespace

@@ -41,6 +41,28 @@ namespace g2o {
       virtual bool read(std::istream& is);
       virtual bool write(std::ostream& os) const;
 
+      virtual void setMeasurement(const SE2& m){
+	_measurement = m;
+	_inverseMeasurement = m.inverse();
+      }
+
+      virtual bool setMeasurementData(const double* d){
+	_measurement=SE2(d[0], d[1], d[2]);
+	_inverseMeasurement = _measurement.inverse();
+	return true;
+      }
+
+      virtual bool getMeasurementData(double* d) const {
+	Vector3d v=_measurement.toVector();
+	d[0] = v[0];
+	d[1] = v[1];
+	d[2] = v[2];
+	return true;
+      }
+
+      virtual int measurementDimension() const {return 3;}
+      
+
       virtual double initialEstimatePossible(const OptimizableGraph::VertexSet& , OptimizableGraph::Vertex* ) { return 1.;}
       virtual void initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to);
 #ifndef NUMERIC_JACOBIAN_TWO_D_TYPES

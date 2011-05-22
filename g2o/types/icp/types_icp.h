@@ -1,16 +1,16 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 Kurt Konolige
-// 
+//
 // g2o is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
 // by the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // g2o is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -18,6 +18,7 @@
 #define TYPES_ICP
 
 #define GICP_ANALYTIC_JACOBIANS
+//#define SCAM_ANALYTIC_JACOBIANS
 
 #include "g2o/core/base_vertex.h"
 #include "g2o/core/base_binary_edge.h"
@@ -58,7 +59,7 @@ namespace g2o {
     Vector3d normal0, normal1;
 
     // rotation matrix for normal
-    Matrix3d R0,R1; 
+    Matrix3d R0,R1;
 
     // initialize an object
     EdgeGICP()
@@ -67,11 +68,13 @@ namespace g2o {
         pos1.setZero();
         normal0 << 0, 0, 1;
         normal1 << 0, 0, 1;
-        makeRot();
+        //makeRot();
+        R0.setIdentity();
+        R1.setIdentity();
       }
 
-    // set up rotation matrix
-    void makeRot()
+    // set up rotation matrix for pos0
+    void makeRot0()
     {
       Vector3d y;
       y << 0, 1, 0;
@@ -83,20 +86,24 @@ namespace g2o {
       //      cout << normal.transpose() << endl;
       //      cout << R0 << endl << endl;
       //      cout << R0*R0.transpose() << endl << endl;
-
-      y << 0, 1, 0;
-      R1.row(2) = normal0;
-      y = y - normal0(1)*normal0;
-      y.normalize();            // need to check if y is close to 0
-      R1.row(1) = y;
-      R1.row(0) = normal0.cross(R1.row(1));
-
     }
 
-    // returns a precision matrix for point-plane 
+    // set up rotation matrix for pos1
+    void makeRot1()
+    {
+      Vector3d y;
+      y << 0, 1, 0;
+      R1.row(2) = normal1;
+      y = y - normal1(1)*normal1;
+      y.normalize();            // need to check if y is close to 0
+      R1.row(1) = y;
+      R1.row(0) = normal1.cross(R1.row(1));
+    }
+
+    // returns a precision matrix for point-plane
     Matrix3d prec0(double e)
     {
-      makeRot();
+      makeRot0();
       Matrix3d prec;
       prec << e, 0, 0,
               0, e, 0,
@@ -115,11 +122,12 @@ namespace g2o {
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-      Edge_V_V_GICP() {};
+      Edge_V_V_GICP() : pl_pl(false) {};
+      Edge_V_V_GICP(const Edge_V_V_GICP* e);
 
     // switch to go between point-plane and plane-plane
     bool pl_pl;
-    Matrix3d pr0, pr1;
+    Matrix3d cov0, cov1;
 
     // I/O functions
     virtual bool read(std::istream& is);
@@ -172,7 +180,8 @@ namespace g2o {
       if (!pl_pl) return;
 
       // re-define the information matrix
- 
+      const Matrix3d transform = ( vp0->estimate().inverse() *  vp1->estimate() ).rotation().toRotationMatrix();
+      information() = ( cov0 + transform * cov1 * transform.transpose() ).inverse();
 
     }
 
@@ -199,7 +208,7 @@ namespace g2o {
     {
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-      
+
         VertexSCam();
 
       // I/O
@@ -214,7 +223,7 @@ namespace g2o {
       }
 
       // camera matrix and stereo baseline
-      static Matrix3d Kcam; 
+      static Matrix3d Kcam;
       static double baseline;
 
       // transformations
@@ -226,8 +235,8 @@ namespace g2o {
       Matrix3d dRdx, dRdy, dRdz;
 
       // transforms
-      static void transformW2F(Matrix<double,3,4> &m, 
-                               const Vector3d &trans, 
+      static void transformW2F(Matrix<double,3,4> &m,
+                               const Vector3d &trans,
                                const Quaterniond &qrot)
         {
           m.block<3,3>(0,0) = qrot.toRotationMatrix().transpose();
@@ -238,8 +247,8 @@ namespace g2o {
           m.col(3) = -m*tt;
         }
 
-      static void transformF2W(Matrix<double,3,4> &m, 
-                               const Vector3d &trans, 
+      static void transformF2W(Matrix<double,3,4> &m,
+                               const Vector3d &trans,
                                const Quaterniond &qrot)
         {
           m.block<3,3>(0,0) = qrot.toRotationMatrix();
@@ -248,7 +257,7 @@ namespace g2o {
 
       // set up camera matrix
       static void setKcam(double fx, double fy, double cx, double cy, double tx)
-      { 
+      {
         Kcam.setZero();
         Kcam(0,0) = fx;
         Kcam(1,1) = fy;
@@ -291,8 +300,8 @@ namespace g2o {
         Vector4d pt;
         pt.head<3>() = pt3;
         pt(3) = 1.0;
-        Vector3d p1 = w2i * pt; 
-        Vector3d p2 = w2n * pt; 
+        Vector3d p1 = w2i * pt;
+        Vector3d p2 = w2n * pt;
         Vector3d pb(baseline,0,0);
 
         double invp1 = 1.0/p1(2);
@@ -330,26 +339,27 @@ namespace g2o {
       // from <Point> to <Cam>
       const VertexPointXYZ *point = static_cast<const VertexPointXYZ*>(_vertices[0]);
       VertexSCam *cam = static_cast<VertexSCam*>(_vertices[1]);
+      //cam->setAll();
 
       // calculate the projection
       Vector3d kp;
       cam->mapPoint(kp,point->estimate());
-      
-      // std::cout << std::endl << "CAM   " << cam->estimate() << std::endl; 
-      // std::cout << "POINT " << pt.transpose() << std::endl; 
-      // std::cout << "PROJ  " << p1.transpose() << std::endl; 
-      // std::cout << "PROJ  " << p2.transpose() << std::endl; 
-      // std::cout << "CPROJ " << kp.transpose() << std::endl; 
-      // std::cout << "MEAS  " << _measurement.transpose() << std::endl; 
+
+      // std::cout << std::endl << "CAM   " << cam->estimate() << std::endl;
+      // std::cout << "POINT " << pt.transpose() << std::endl;
+      // std::cout << "PROJ  " << p1.transpose() << std::endl;
+      // std::cout << "PROJ  " << p2.transpose() << std::endl;
+      // std::cout << "CPROJ " << kp.transpose() << std::endl;
+      // std::cout << "MEAS  " << _measurement.transpose() << std::endl;
 
       // error, which is backwards from the normal observed - calculated
       // _measurement is the measured projection
       _error = kp - _measurement;
     }
-
+#ifdef SCAM_ANALYTIC_JACOBIANS
     // jacobian
     virtual void linearizeOplus();
-
+#endif
 };
 
 

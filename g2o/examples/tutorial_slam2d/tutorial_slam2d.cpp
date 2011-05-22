@@ -163,7 +163,6 @@ int main()
     while (probLimits[motionDirection] < sampleMove && motionDirection+1 < MO_NUM_ELEMS) {
       motionDirection++;
     }
-    //cerr << PVAR(motionDirection) << endl;
 
     SE2 nextMotionStep = getMotion(motionDirection, stepLen);
     GridPose nextGridPose = generateNewPose(poses.back(), nextMotionStep, transNoise, rotNoise);
@@ -204,7 +203,7 @@ int main()
             do {
               offx = Rand::uniform_rand(-0.5*stepLen, 0.5*stepLen);
               offy = Rand::uniform_rand(-0.5*stepLen, 0.5*stepLen);
-            } while (hypot_sqr(offx, offy) < SQR(0.25));
+            } while (hypot_sqr(offx, offy) < 0.25*0.25);
             l->truePose[0] = cx + offx;
             l->truePose[1] = cy + offy;
             landmarksForCell.push_back(l);

@@ -98,6 +98,8 @@ void G2oQGLViewer::init()
  //glDisable(GL_LIGHT0);
  //glDisable(GL_LIGHTING);
 
+  setBackgroundColor(QColor::fromRgb(51, 51, 51));
+
   // some default settings i like
   glEnable(GL_LINE_SMOOTH);
   glEnable(GL_BLEND); 

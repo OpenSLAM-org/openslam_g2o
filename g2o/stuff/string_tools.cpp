@@ -171,7 +171,7 @@ int readLine(std::istream& is, std::stringstream& currentLine)
   is.get(*currentLine.rdbuf());
   if (is.fail()) // fail is set on empty lines
     is.clear();
-  FSKIP_LINE(is); // read \n not read by get()
+  G2O_FSKIP_LINE(is); // read \n not read by get()
   return currentLine.str().size();
 }
 

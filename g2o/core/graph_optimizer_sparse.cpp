@@ -473,8 +473,10 @@ namespace g2o{
           i=iterations;
       } // end LevenbergMarquardt
 
+      bool errorComputed = false;
       if (cstat) {
         computeActiveErrors();
+        errorComputed = true;
         cstat->chi2 = activeChi2();
         cstat->timeIteration = get_time()-ts;
       }
@@ -482,13 +484,13 @@ namespace g2o{
       double dts=get_time()-ts;
       cumTime+=dts;
       if (verbose()){
-        computeActiveErrors();
-        cerr << fixed;
+        if (! errorComputed)
+          computeActiveErrors();
         cerr << "iteration= " << i
-          << "\t chi2= " << activeChi2()
+          << "\t chi2= " << FIXED(activeChi2())
           << "\t time= " << dts
           << "\t cumTime= " << cumTime
-          << "\t lambda= " << _currentLambda
+          << "\t lambda= " << FIXED(_currentLambda)
           << "\t edges= " << _activeEdges.size()
           << "\t schur= " << useSchur  << endl;
       }
