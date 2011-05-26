@@ -39,6 +39,7 @@ struct Landmark
   Vector2d simulatedPose;
   vector<int> seenBy;
   Landmark() : id(-1) {}
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 typedef vector<Landmark*> LandmarkVector;
 typedef map<int, map<int, LandmarkVector> > LandmarkGrid;
@@ -52,6 +53,7 @@ struct GridPose
   SE2 truePose;
   SE2 simulatorPose;
   LandmarkVector landmarks;      ///< the landmarks observed by this node
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
 struct GridEdge
@@ -60,6 +62,7 @@ struct GridEdge
   int to;
   SE2 trueTransf;
   SE2 simulatorTransf;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
 enum MotionType {
@@ -67,7 +70,7 @@ enum MotionType {
   MO_NUM_ELEMS
 };
 
-typedef vector<GridPose>  PosesVector;
+typedef vector<GridPose, Eigen::aligned_allocator<GridPose> >  PosesVector;
 typedef vector<const GridPose*> PosesPtrVector;
 typedef map<int, map<int, PosesPtrVector> > PosesGrid;
 
