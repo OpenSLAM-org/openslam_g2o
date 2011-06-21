@@ -38,10 +38,10 @@ namespace g2o {
     _cholmodFactor = 0;
     cholmod_start(&_cholmodCommon);
 
-    // setup ordering strategy
+    // setup ordering strategy to not permute the matrix
     _cholmodCommon.nmethods = 1 ;
-    _cholmodCommon.method[0].ordering = CHOLMOD_GIVEN;
-    //_cholmodCommon.postorder = 0;
+    _cholmodCommon.method[0].ordering = CHOLMOD_NATURAL;
+    _cholmodCommon.postorder = 0;
     _cholmodCommon.supernodal = CHOLMOD_SIMPLICIAL;
 
     _permutedUpdate = cholmod_allocate_triplet(1000, 1000, 1024, 0, CHOLMOD_REAL, &_cholmodCommon);
@@ -423,6 +423,13 @@ namespace g2o {
 
     _cholmodFactor = cholmod_analyze(_cholmodSparse, &_cholmodCommon);
     cholmod_factorize(_cholmodSparse, _cholmodFactor, &_cholmodCommon);
+
+#if 0
+    int* p = (int*)_cholmodFactor->Perm;
+    for (int i = 0; i < (int)n; ++i)
+      if (i != p[i])
+        cerr << "wrong permutation" << i << " -> " << p[i] << endl;
+#endif
 
     if (_cholmodCommon.status == CHOLMOD_NOT_POSDEF) {
       //std::cerr << "Cholesky failure, writing debug.txt (Hessian loadable by Octave)" << std::endl;
