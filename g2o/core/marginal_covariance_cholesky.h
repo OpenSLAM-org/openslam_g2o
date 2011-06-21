@@ -18,6 +18,7 @@
 #define MARGINAL_COVARIANCE_CHOLESKY_H
 
 #include "optimizable_graph.h"
+#include "sparse_block_matrix.h"
 
 #include <cassert>
 #include <vector>
@@ -54,6 +55,13 @@ namespace g2o {
        * be provided by the caller).
        */
       void computeCovariance(double** covBlocks, const std::vector<int>& blockIndices);
+
+
+      /**
+       * compute the marginal cov for the given block indices, write the result in spinv).
+       */
+      void computeCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<int>& rowBlockIndices, const std::vector< std::pair<int, int> >& blockIndices);
+
 
       /**
        * set the CCS representation of the cholesky factor along with the inverse permutation used to reduce the fill-in.

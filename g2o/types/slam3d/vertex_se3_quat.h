@@ -63,6 +63,22 @@ class VertexSE3 : public BaseVertex<6, SE3Quat>
       return 7;
     }
 
+    virtual bool setMinimalEstimateData(const double* est){
+      Map<const Vector6d> v(est);
+      _estimate.fromMinimalVector(v);
+      return true;
+    }
+
+    virtual bool getMinimalEstimateData(double* est) const{
+      Map<Vector6d> v(est);
+      v = _estimate.toMinimalVector();
+      return true;
+    }
+
+    virtual int minimalEstimateDimension() const {
+      return 6;
+    }
+
     virtual void oplus(double* update)
     {
       Map<Vector6d> v(update);

@@ -79,14 +79,9 @@ int gettimeofday(struct timeval *tv, struct timezone *tz);
  */
 inline double get_time() 
 {
-#ifdef _WINDOWS
-  return 0.0;
-#else
-  struct timeval ts; 
+  struct timeval ts;
   gettimeofday(&ts,0);
-  
   return ts.tv_sec + ts.tv_usec*1e-6;
-#endif
 }
 
 /**

@@ -29,6 +29,7 @@
 
 namespace g2o {
 
+  class HyperGraphAction;
   struct SolverProperty;
 
   /**
@@ -43,6 +44,13 @@ namespace g2o {
      of portions of the vertices.
    */
   struct OptimizableGraph : public HyperGraph {
+
+    enum ActionType {
+      AT_PREITERATION, AT_POSTITERATION,
+      AT_NUM_ELEMENTS, // keep as last element
+    };
+
+    typedef std::set<HyperGraphAction*>    HyperGraphActionSet;
 
     // forward declarations
     class Vertex;
@@ -98,11 +106,11 @@ namespace g2o {
         //! returns a deep copy of the current vertex
         virtual Vertex* clone() const ;
 
-        //! the observation associated with this vertex
-        const Data* observation() const { return _observation; }
-        Data* observation() { return _observation; }
+        //! the user data associated with this vertex
+        const Data* userData() const { return _userData; }
+        Data* userData() { return _userData; }
 
-        void setObservation(Data* obs) { _observation = obs;}
+        void setUserData(Data* obs) { _userData = obs;}
 
         virtual ~Vertex();
 
@@ -158,6 +166,25 @@ namespace g2o {
          * -1 if it is not supported
          */
         virtual int estimateDimension() const;
+
+
+        /**
+         * sets the initial estimate from an array of double
+         * @return true on success
+         */
+        virtual bool setMinimalEstimateData(const double* estimate);
+
+        /**
+         * writes the estimater to an array of double
+         * @returns true on success
+         */
+        virtual bool getMinimalEstimateData(double* estimate) const ;
+
+        /**
+         * returns the dimension of the extended representation used by get/setEstimate(double*)
+         * -1 if it is not supported
+         */
+        virtual int minimalEstimateDimension() const;
 
         //! backup the position of the vertex to a stack
         virtual void push() = 0;
@@ -224,7 +251,7 @@ namespace g2o {
 
       protected:
         OptimizableGraph* _graph;
-        Data* _observation;
+        Data* _userData;
         int _tempIndex;
         bool _fixed;
         bool _marginalized;
@@ -373,7 +400,7 @@ namespace g2o {
     inline const Vertex* vertex (int id) const{ return reinterpret_cast<const Vertex*>(HyperGraph::vertex(id));}
 
     //! empty constructor
-    OptimizableGraph() {_upperGraph=0; _lowerGraph=0; _nextEdgeId = 0;}
+    OptimizableGraph();
     virtual ~OptimizableGraph();
 
     //! adds all edges and vertices of the graph <i>g</i> to this graph.
@@ -383,7 +410,7 @@ namespace g2o {
      * adds a new vertex. The new vertex is then "taken".
      * @return false if a vertex with the same id as v is already in the graph, true otherwise.
      */
-    virtual bool addVertex(OptimizableGraph::Vertex* v, Data* observation=0);
+    virtual bool addVertex(OptimizableGraph::Vertex* v, Data* userData=0);
 
     /**
      * adds a new edge.
@@ -410,9 +437,19 @@ namespace g2o {
     virtual int optimize(int iterations, bool online=false);
 
     //! called at the beginning of an iteration (argument is the number of the iteration)
-    virtual void preIteration(int) {}
+    virtual void preIteration(int);
     //! called at the end of an iteration (argument is the number of the iteration)
-    virtual void postIteration(int) {}
+    virtual void postIteration(int);
+
+    //! add an action to be executed before each iteration
+    bool addPreIterationAction(HyperGraphAction* action);
+    //! add an action to be executed after each iteration
+    bool addPostIterationAction(HyperGraphAction* action);
+
+    //! remove an action that should no longer be execured before each iteration
+    bool removePreIterationAction(HyperGraphAction* action);
+    //! remove an action that should no longer be execured after each iteration
+    bool removePostIterationAction(HyperGraphAction* action);
 
     //! push the estimate of all variables onto a stack
     virtual void push();
@@ -463,6 +500,10 @@ namespace g2o {
       OptimizableGraph* _upperGraph, *_lowerGraph;
       std::map<std::string, std::string> _renamedTypesLookup;
       long long _nextEdgeId;
+      std::vector<HyperGraphActionSet> _graphActions;
+
+      // do not watch this. To be removed soon, or integrated in a nice way
+      bool _edge_has_id;
   };
   
   /**

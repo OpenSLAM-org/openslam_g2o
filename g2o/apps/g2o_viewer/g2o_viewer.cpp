@@ -3,8 +3,9 @@
 #include "main_window.h"
 #include "stream_redirect.h"
 
-#include "gui_sparse_optimizer.h"
+#include "gui_hyper_graph_action.h"
 
+#include "g2o/core/graph_optimizer_sparse.h"
 #include "g2o/apps/g2o_cli/g2o_common.h"
 #include "g2o/apps/g2o_cli/dl_wrapper.h"
 
@@ -42,15 +43,21 @@ int main(int argc, char** argv)
   // redirect the output that normally goes to cerr to the textedit in the viewer
   StreamRedirect redirect(cerr, mw.plainTextEdit);
 
-  GuiSparseOptimizer* optimizer = new GuiSparseOptimizer();
-  optimizer->viewer = mw.viewer;
+  // setting up the optimizer
+  SparseOptimizer* optimizer = new SparseOptimizer();
   mw.viewer->graph = optimizer;
+
+  // set up the GUI action
+  GuiHyperGraphAction guiHyperGraphAction;
+  guiHyperGraphAction.viewer = mw.viewer;
+  optimizer->addPostIterationAction(&guiHyperGraphAction);
 
   if (inputFilename.size() > 0) {
     mw.loadFromFile(QString::fromStdString(inputFilename));
   }
 
   while (mw.isVisible()) {
+    guiHyperGraphAction.dumpScreenshots = mw.actionDump_Images->isChecked();
     qapp.processEvents();
     usleep(10000);
   }

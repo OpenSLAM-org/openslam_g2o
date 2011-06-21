@@ -76,7 +76,7 @@ namespace g2o {
     /**
      * HACK updating the internal structures for online processing
      */
-    bool updateInitialization(HyperGraph::VertexSet& vset, HyperGraph::EdgeSet& eset);
+    virtual bool updateInitialization(HyperGraph::VertexSet& vset, HyperGraph::EdgeSet& eset);
   
     /**
        Propagates an initial guess from the vertex specified as origin.
@@ -101,6 +101,15 @@ namespace g2o {
      * and stores them in the nodes of the graph.
      */
     bool computeMarginals();
+
+    /**
+     * computes the blocks of the inverse of the specified pattern.
+     * the pattern is given via pairs <row, col> of the blocks in the hessian
+     * @param blockIndices: the pattern
+     * @param spinv: the sparse block matrix with the result
+     * @returns false if the operation is not supported by the solver
+     */
+    bool computeMarginals(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices);
 
     //! finds a gauge in the graph to remove the undefined dof.
     // The gauge should be fixed() and then the optimization can work (if no additional dof are in

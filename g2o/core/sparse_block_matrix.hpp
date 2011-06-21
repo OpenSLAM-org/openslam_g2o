@@ -45,6 +45,12 @@ namespace g2o {
   }
 
   template <class MatrixType>
+  SparseBlockMatrix<MatrixType>::SparseBlockMatrix( ):
+    _blockCols(0), _hasStorage(true) 
+  {
+  }
+
+  template <class MatrixType>
   void SparseBlockMatrix<MatrixType>::clear(bool dealloc) {
 #   ifdef _OPENMP
 #   pragma omp parallel for default (shared) if (_blockCols.size() > 100)
@@ -81,7 +87,7 @@ namespace g2o {
         _block=new typename SparseBlockMatrix<MatrixType>::SparseMatrixBlock(rb,cb);
         _block->setZero();
         std::pair < typename SparseBlockMatrix<MatrixType>::IntBlockMap::iterator, bool> result
-          =_blockCols[c].insert(std::make_pair(r,_block));
+          =_blockCols[c].insert(std::make_pair(r,_block)); (void) result;
         assert (result.second);
       }
     } else {
@@ -439,8 +445,9 @@ namespace g2o {
   }
 
   template <class MatrixType>
-  void SparseBlockMatrix<MatrixType>::fillCCS(double* Cx, bool upperTriangle) const
+  int SparseBlockMatrix<MatrixType>::fillCCS(double* Cx, bool upperTriangle) const
   {
+    double* CxStart = Cx;
     for (size_t i=0; i<_blockCols.size(); ++i){
       int cstart=i ? _colBlockIndices[i-1] : 0;
       int csize=colsOfBlock(i);
@@ -458,6 +465,7 @@ namespace g2o {
         }
       }
     }
+    return Cx - CxStart;
   }
 
   template <class MatrixType>

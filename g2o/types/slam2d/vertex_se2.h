@@ -59,6 +59,16 @@ namespace g2o {
       
       virtual int estimateDimension() const { return 3; }
 
+      virtual bool setMinimalEstimateData(const double* est){
+      	return setEstimateData(est);
+      }
+
+      virtual bool getMinimalEstimateData(double* est) const {
+	return getEstimateData(est);
+      }
+      
+      virtual int minimalEstimateDimension() const { return 3; }
+
       virtual bool read(std::istream& is);
       virtual bool write(std::ostream& os) const;
 

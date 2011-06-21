@@ -23,6 +23,25 @@ namespace g2o {
 
   HyperGraphActionLibrary* HyperGraphActionLibrary::actionLibInstance = 0;
 
+  HyperGraphAction::Parameters::~Parameters()
+  {
+  }
+
+  HyperGraphAction::ParametersIteration::ParametersIteration(int iter) :
+    HyperGraphAction::Parameters(),
+    iteration(iter)
+  {
+  }
+
+  HyperGraphAction::~HyperGraphAction()
+  {
+  }
+
+  HyperGraphAction* HyperGraphAction::operator()(const HyperGraph*, Parameters*)
+  {
+    return 0;
+  }
+
   HyperGraphElementAction::Parameters::~Parameters()
   {
   }
@@ -159,7 +178,6 @@ namespace g2o {
       if ( typeName.empty() || typeid(**it).name()==typeName)
         (*action)(*it, params);
     }
-
   }
 
 } // end namespace

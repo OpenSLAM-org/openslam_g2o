@@ -22,6 +22,7 @@
 #include <cassert>
 #include <vector>
 #include <limits>
+#include <cstddef>
 
 #ifdef _MSC_VER
 #include <unordered_map>
@@ -76,13 +77,14 @@ namespace g2o {
           EdgeSet _edges;
       };
 
-      /** Abstract Edge class. Your nice edge classes should inherit from that one.
-    An hyper-edge has pointers to the vertices it connects and stores them in a vector.
-      */
+      /** 
+       * Abstract Edge class. Your nice edge classes should inherit from that one.
+       * An hyper-edge has pointers to the vertices it connects and stores them in a vector.
+       */
       class Edge : public HyperGraphElement {
         public:
           //! creates and empty edge with no vertices
-          Edge();
+          explicit Edge(int id = -1);
           virtual ~Edge();
 
           /**
@@ -99,10 +101,10 @@ namespace g2o {
           VertexVector& vertices() { return _vertices;}
 
           int id() const {return _id;}
-          void setId(int id_) {_id=id_;}
+          void setId(int id);
         protected:
           VertexVector _vertices;
-          int _id; // unique id (to be used in the future)
+          int _id; // unique id
       };
 
     public:

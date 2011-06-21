@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with g2o.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "gui_sparse_optimizer.h"
+#include "gui_hyper_graph_action.h"
 
 #include "g2o_qglviewer.h"
 
@@ -24,30 +24,36 @@
 
 namespace g2o {
 
-GuiSparseOptimizer::GuiSparseOptimizer() :
-  SparseOptimizer(),
+GuiHyperGraphAction::GuiHyperGraphAction() :
+  HyperGraphAction(),
   viewer(0), dumpScreenshots(false)
 {
 }
 
-GuiSparseOptimizer::~GuiSparseOptimizer()
+GuiHyperGraphAction::~GuiHyperGraphAction()
 {
 }
 
-void GuiSparseOptimizer::postIteration(int iteration)
+HyperGraphAction* GuiHyperGraphAction::operator()(const HyperGraph* graph, Parameters* parameters)
 {
+  (void) graph;
   if (viewer) {
     viewer->setUpdateDisplay(true);
     viewer->updateGL();
 
     if (dumpScreenshots) {
-      viewer->setSnapshotFormat(QString("PNG"));
-      viewer->setSnapshotQuality(-1);
-      viewer->saveSnapshot(QString().sprintf("g2o%.6d.png", iteration), true);
+      ParametersIteration* p = dynamic_cast<ParametersIteration*>(parameters);
+      if (p) {
+        viewer->setSnapshotFormat(QString("PNG"));
+        viewer->setSnapshotQuality(-1);
+        viewer->saveSnapshot(QString().sprintf("g2o%.6d.png", p->iteration), true);
+      }
     }
 
     qApp->processEvents();
+    return this;
   }
+  return 0;
 }
 
 } // end namespace

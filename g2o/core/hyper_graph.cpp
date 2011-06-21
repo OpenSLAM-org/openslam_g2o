@@ -29,7 +29,7 @@ namespace g2o {
   {
   }
 
-  HyperGraph::Edge::Edge()
+  HyperGraph::Edge::Edge(int id) : _id(id)
   {
   }
 
@@ -40,6 +40,11 @@ namespace g2o {
   void HyperGraph::Edge::resize(size_t size)
   {
     _vertices.resize(size);
+  }
+
+  void HyperGraph::Edge::setId(int id)
+  {
+    _id = id;
   }
 
   HyperGraph::Vertex* HyperGraph::vertex(int id)

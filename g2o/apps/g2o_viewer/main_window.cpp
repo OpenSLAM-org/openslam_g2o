@@ -18,8 +18,6 @@
 
 #include "main_window.h"
 
-#include "gui_sparse_optimizer.h"
-
 #include "g2o/core/solver_property.h"
 #include "g2o/core/solver_factory.h"
 #include "g2o/core/graph_optimizer_sparse.h"
@@ -322,15 +320,4 @@ void MainWindow::on_actionDefault_Background_triggered(bool)
 {
   viewer->setBackgroundColor(QColor::fromRgb(51, 51, 51));
   viewer->updateGL();
-}
-
-void MainWindow::on_actionDump_Images_triggered(bool checked)
-{
-  GuiSparseOptimizer* optimizer = dynamic_cast<GuiSparseOptimizer*>(viewer->graph);
-  if (optimizer) {
-    if (checked) {
-      cerr << "Dumping images after each iteration into current folder" << endl;
-    }
-    optimizer->dumpScreenshots = checked;
-  }
 }

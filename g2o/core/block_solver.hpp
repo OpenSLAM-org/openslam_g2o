@@ -484,6 +484,19 @@ bool BlockSolver<Traits>::computeMarginals()
 }
 
 template <typename Traits>
+bool BlockSolver<Traits>::computeMarginals(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices)
+{
+  double t = get_time();
+  bool ok = _linearSolver->solvePattern(spinv, blockIndices, *_Hpp);
+  if (globalStats) {
+    globalStats->timeMarginals = get_time() - t;
+  }
+  return ok;
+}
+
+
+
+template <typename Traits>
 bool BlockSolver<Traits>::buildSystem()
 {
   // clear b vector

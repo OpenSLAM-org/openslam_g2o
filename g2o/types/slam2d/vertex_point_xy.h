@@ -51,6 +51,18 @@ namespace g2o {
 	return 2;
       }
 
+      virtual bool setMinimalEstimateData(const double* est){
+	return setEstimateData(est);
+      }
+
+      virtual bool getMinimalEstimateData(double* est) const{
+	return getEstimateData(est);
+      }
+      
+      virtual int minimalEstimateDimension() const { 
+	return 2;
+      }
+
       virtual void oplus(double* update)
       {
         _estimate[0] += update[0];

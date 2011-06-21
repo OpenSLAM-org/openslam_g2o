@@ -19,6 +19,7 @@
 
 #include "hyper_graph.h"
 #include "batch_stats.h"
+#include "sparse_block_matrix.h"
 #include <cstddef>
 
 namespace g2o {
@@ -66,6 +67,12 @@ namespace g2o {
       virtual bool computeMarginals() = 0;
 
       /**
+       * computes the block diagonal elements of the pattern specified in the input
+       * and stores them in the nodes of the graph.
+       */
+      virtual bool computeMarginals(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices) = 0;
+
+      /**
        * update the system while performing Levenberg, i.e., modifying the diagonal
        * components of A by doing += lambda along the main diagonal of the Matrix.
        * Note that this function may be called with a positive and a negative lambda.
@@ -101,12 +108,16 @@ namespace g2o {
       virtual bool schur()=0;
       virtual void setSchur(bool s)=0;
 
+      size_t additionalVectorSpace() const { return _additionalVectorSpace;}
+      void setAdditionalVectorSpace(size_t s);
+
     protected:
       SparseOptimizer* _optimizer;
       double* _x;
       double* _b;
       size_t _xSize, _maxXSize;
       bool _isLevenberg; ///< the system we gonna solve is a Levenberg-Marquardt system
+      size_t _additionalVectorSpace;
 
       void resizeVector(size_t sx);
   };

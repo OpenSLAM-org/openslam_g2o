@@ -16,28 +16,28 @@
 // You should have received a copy of the GNU General Public License
 // along with g2o.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef GUI_SPARSE_OPTIMIZER_H
-#define GUI_SPARSE_OPTIMIZER_H
+#ifndef GUI_HYPER_GRAPH_ACTION_H
+#define GUI_HYPER_GRAPH_ACTION_H
 
-#include "g2o/core/graph_optimizer_sparse.h"
+#include "g2o/core/hyper_graph_action.h"
 
 namespace g2o {
 
   class G2oQGLViewer;
 
   /**
-   * \brief Optimizer which calls an GUI update after each iteration
+   * \brief action which calls an GUI update after each iteration
    */
-  class GuiSparseOptimizer : public SparseOptimizer
+  class GuiHyperGraphAction : public HyperGraphAction
   {
     public:
-      GuiSparseOptimizer();
-      ~GuiSparseOptimizer();
+      GuiHyperGraphAction();
+      ~GuiHyperGraphAction();
 
       /**
        * calling updateGL, processEvents to visualize the current state after each iteration
        */
-      virtual void postIteration(int);
+      HyperGraphAction* operator()(const HyperGraph* graph, Parameters* parameters = 0);
 
       G2oQGLViewer* viewer;   ///< the viewer which visualizes the graph
       bool dumpScreenshots;

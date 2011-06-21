@@ -1,4 +1,4 @@
-FIND_PATH(CHOLMOD_INCLUDE_DIR NAMES cholmod.h amd.h
+FIND_PATH(CHOLMOD_INCLUDE_DIR NAMES cholmod.h amd.h camd.h
     PATHS
     /usr/include/suitesparse
     /usr/include/ufsparse
@@ -26,6 +26,15 @@ FIND_LIBRARY(AMD_LIBRARY NAMES SHARED NAMES amd
   NO_DEFAULT_PATH
   )
 
+FIND_LIBRARY(CAMD_LIBRARY NAMES camd
+  PATHS
+  /usr/lib
+  /usr/local/lib
+  /opt/local/lib
+  /sw/lib
+  NO_DEFAULT_PATH
+  )
+
 # Different platforms seemingly require linking against different sets of libraries
 IF(CYGWIN)
   FIND_PACKAGE(PkgConfig)
@@ -44,15 +53,6 @@ IF(CYGWIN)
 # MacPorts build of the SparseSuite requires linking against extra libraries
 
 ELSEIF(APPLE)
-
-  FIND_LIBRARY(CAMD_LIBRARY NAMES camd
-    PATHS
-    /usr/lib
-    /usr/local/lib
-    /opt/local/lib
-    /sw/lib
-    NO_DEFAULT_PATH
-    )
 
   FIND_LIBRARY(COLAMD_LIBRARY NAMES colamd
     PATHS

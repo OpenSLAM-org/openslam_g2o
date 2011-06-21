@@ -101,6 +101,7 @@ namespace g2o {
       virtual bool buildSystem();
       virtual bool solve();
       virtual bool computeMarginals();
+      virtual bool computeMarginals(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices);
       virtual bool setLambda(double lambda);
       virtual bool supportsSchur() {return true;}
       virtual bool schur() { return _doSchur;}

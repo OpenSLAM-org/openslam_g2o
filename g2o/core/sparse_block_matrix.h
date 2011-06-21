@@ -70,6 +70,9 @@ class SparseBlockMatrix {
      * if false the matrix is only a "view" over an existing structure.
      */
     SparseBlockMatrix( const int * rbi, const int* cbi, int rb, int cb, bool hasStorage=true);
+
+    SparseBlockMatrix();
+
     ~SparseBlockMatrix();
 
     //! this zeroes all the blocks. If dealloc=true the blocks are removed from memory
@@ -145,7 +148,7 @@ class SparseBlockMatrix {
      * fill the CCS arrays of a matrix, arrays have to be allocated beforehand. This function only writes
      * the values and assumes that column and row structures have already been written.
      */
-    void fillCCS(double* Cx, bool upperTriangle = false) const;
+    int fillCCS(double* Cx, bool upperTriangle = false) const;
 
     //! exports the non zero blocks in the structure matrix ms
     void fillBlockStructure(MatrixStructure& ms) const;

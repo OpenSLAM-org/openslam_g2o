@@ -10,21 +10,22 @@ QT4_WRAP_CPP(UI_SOURCES main_window.h)
 INCLUDE_DIRECTORIES(${QGLVIEWER_INCLUDE_DIR} ${CMAKE_BINARY_DIR} ${QT_QTCORE_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${QT_QTCORE_INCLUDE_DIR}/..)
 
 ADD_EXECUTABLE(g2o_viewer
-  g2o_qglviewer.cpp
   g2o_viewer.cpp
-  primitives.cpp
-  main_window.cpp
-  stream_redirect.cpp
-  gui_sparse_optimizer.cpp
+  g2o_qglviewer.cpp g2o_qglviewer.h
+  primitives.cpp primitives.h
+  main_window.cpp main_window.h
+  stream_redirect.cpp stream_redirect.h
+  gui_hyper_graph_action.cpp gui_hyper_graph_action.h
   ${UI_HEADERS}
   ${UI_SOURCES}
 )
 
 TARGET_LINK_LIBRARIES(g2o_viewer core g2o_cli_library ${QGLVIEWER_LIBRARY} ${QT_QTXML_LIBRARY} ${QT_QTOPENGL_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTCORE_LIBRARY} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY})
 
-
 INSTALL(TARGETS g2o_viewer
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
   ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
+FILE(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
+INSTALL(FILES ${headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/g2o/apps/g2o_viewer)

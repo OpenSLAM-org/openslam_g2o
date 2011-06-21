@@ -117,7 +117,7 @@ public:
 
           assert(track.size()>=2);
 
-          double max_err = 0;
+          double max_err = 0; (void) max_err;
 
           for (g2o::HyperGraph::EdgeSet::iterator it_t=track.begin();
                it_t!=track.end(); ++it_t)

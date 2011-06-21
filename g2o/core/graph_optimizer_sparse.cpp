@@ -529,8 +529,8 @@ namespace g2o{
     std::vector<HyperGraph::Vertex*> newVertices;
     newVertices.reserve(vset.size());
     _activeVertices.reserve(_activeVertices.size() + vset.size());
-    for (HyperGraph::VertexSet::iterator it = vset.begin(); it != vset.end(); ++it)
-      _activeVertices.push_back(static_cast<OptimizableGraph::Vertex*>(*it));
+    //for (HyperGraph::VertexSet::iterator it = vset.begin(); it != vset.end(); ++it)
+      //_activeVertices.push_back(static_cast<OptimizableGraph::Vertex*>(*it));
     _activeEdges.reserve(_activeEdges.size() + eset.size());
     for (HyperGraph::EdgeSet::iterator it = eset.begin(); it != eset.end(); ++it)
       _activeEdges.push_back(static_cast<OptimizableGraph::Edge*>(*it));
@@ -636,6 +636,11 @@ namespace g2o{
   {
     return _solver->computeMarginals();
   }
+
+  bool SparseOptimizer::computeMarginals(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices){
+    return _solver->computeMarginals(spinv, blockIndices);
+  }
+
 
   void SparseOptimizer::setMaxTrialsAfterFailure(int max_trials)
   {

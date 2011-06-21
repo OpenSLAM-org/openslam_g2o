@@ -114,7 +114,7 @@ namespace g2o {
         action(entry->edge(), entry->parent(), u);
       }
 
-      std::pair< OptimizableGraph::VertexSet::iterator, bool> insertResult = _visited.insert(u);
+      /* std::pair< OptimizableGraph::VertexSet::iterator, bool> insertResult = */ _visited.insert(u);
       OptimizableGraph::EdgeSet::iterator et = u->edges().begin();
       while (et != u->edges().end()){
         OptimizableGraph::Edge* edge = static_cast<OptimizableGraph::Edge*>(*et);

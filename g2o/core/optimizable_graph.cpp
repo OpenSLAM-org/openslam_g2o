@@ -25,6 +25,7 @@
 #include "estimate_propagator.h"
 #include "factory.h"
 #include "solver_property.h"
+#include "hyper_graph_action.h"
 
 #include "g2o/stuff/macros.h"
 #include "g2o/stuff/color_macros.h"
@@ -37,7 +38,7 @@ namespace g2o {
 
   OptimizableGraph::Vertex::Vertex() :
     HyperGraph::Vertex(),
-    _graph(0), _observation(0), _tempIndex(-1), _fixed(false), _marginalized(false),
+    _graph(0), _userData(0), _tempIndex(-1), _fixed(false), _marginalized(false),
     _colInHessian(-1)
   {
 
@@ -45,7 +46,7 @@ namespace g2o {
 
   OptimizableGraph::Vertex::~Vertex()
   {
-    delete _observation;
+    delete _userData;
   }
   
   OptimizableGraph::Vertex* OptimizableGraph::Vertex::clone() const
@@ -53,6 +54,7 @@ namespace g2o {
     // TODO
     return 0;
   }
+
   bool OptimizableGraph::Vertex::setEstimateData(const double *)
   {
     return false;
@@ -64,6 +66,21 @@ namespace g2o {
   }
 
   int OptimizableGraph::Vertex::estimateDimension() const
+  {
+    return -1;
+  }
+
+  bool OptimizableGraph::Vertex::setMinimalEstimateData(const double *)
+  {
+    return false;
+  }
+
+  bool OptimizableGraph::Vertex::getMinimalEstimateData(double *) const
+  {
+    return false;
+  }
+
+  int OptimizableGraph::Vertex::minimalEstimateDimension() const
   {
     return -1;
   }
@@ -96,18 +113,24 @@ namespace g2o {
     return 0;
   }
 
+  OptimizableGraph::OptimizableGraph()
+  {
+    _upperGraph=0; _lowerGraph=0; _nextEdgeId = 0; _edge_has_id = false;
+    _graphActions.resize(AT_NUM_ELEMENTS);
+  }
+
   OptimizableGraph::~OptimizableGraph()
   {
     clear();
   }
 
-  bool OptimizableGraph::addVertex(Vertex* v, Data* observation)
+  bool OptimizableGraph::addVertex(Vertex* v, Data* userData)
   {
     Vertex* inserted = vertex(v->id());
     if (inserted)
       return false;
-    if (observation)
-      v->setObservation(observation);
+    if (userData)
+      v->setUserData(userData);
     HyperGraph::addVertex(v);
     OptimizableGraph::Vertex* ov=dynamic_cast<OptimizableGraph::Vertex*>(v);
     assert(ov);
@@ -234,6 +257,11 @@ bool OptimizableGraph::load(istream& is, bool createEdges)
     else if (dynamic_cast<Edge*>(element)) {
       Edge* e = static_cast<Edge*>(element);
       int numV = e->vertices().size();
+      if (_edge_has_id){
+	int id;
+	currentLine >> id;
+	e->setId(id);
+      }
       //cerr << PVAR(token) << " " << PVAR(numV) << endl;
       if (numV == 2) { // it's a pairwise / binary edge type which we handle in a special way
         int id1, id2;
@@ -386,6 +414,8 @@ bool OptimizableGraph::save(ostream& os, int level) const
     string tag = factory->tag(e);
     if (tag.size() > 0) {
       os << tag << " ";
+      if (_edge_has_id)
+	os << e->id() << " ";
       for (vector<HyperGraph::Vertex*>::const_iterator it = e->vertices().begin(); it != e->vertices().end(); ++it) {
         OptimizableGraph::Vertex* v = static_cast<OptimizableGraph::Vertex*>(*it);
         os << v->id() << " ";
@@ -430,6 +460,8 @@ bool OptimizableGraph::saveSubset(ostream& os, HyperGraph::VertexSet& vset, int 
     string tag = factory->tag(const_cast<OptimizableGraph::Edge*>(e));
     if (tag.size() > 0) {
       os << tag << " ";
+      if (_edge_has_id)
+	os << e->id() << " ";
       for (vector<HyperGraph::Vertex*>::const_iterator it = e->vertices().begin(); it != e->vertices().end(); ++it) {
         OptimizableGraph::Vertex* v = static_cast<OptimizableGraph::Vertex*>(*it);
         os << v->id() << " ";
@@ -585,6 +617,50 @@ std::set<int> OptimizableGraph::dimensions() const
     auxDims.insert(v->dimension());
   }
   return auxDims;
+}
+
+void OptimizableGraph::preIteration(int iter)
+{
+  HyperGraphActionSet& actions = _graphActions[AT_PREITERATION];
+  if (actions.size() > 0) {
+    HyperGraphAction::ParametersIteration params(iter);
+    for (HyperGraphActionSet::iterator it = actions.begin(); it != actions.end(); ++it) {
+      (*(*it))(this, &params);
+    }
+  }
+}
+
+void OptimizableGraph::postIteration(int iter)
+{
+  HyperGraphActionSet& actions = _graphActions[AT_POSTITERATION];
+  if (actions.size() > 0) {
+    HyperGraphAction::ParametersIteration params(iter);
+    for (HyperGraphActionSet::iterator it = actions.begin(); it != actions.end(); ++it) {
+      (*(*it))(this, &params);
+    }
+  }
+}
+
+bool OptimizableGraph::addPostIterationAction(HyperGraphAction* action)
+{
+  std::pair<HyperGraphActionSet::iterator, bool> insertResult = _graphActions[AT_POSTITERATION].insert(action);
+  return insertResult.second;
+}
+
+bool OptimizableGraph::addPreIterationAction(HyperGraphAction* action)
+{
+  std::pair<HyperGraphActionSet::iterator, bool> insertResult = _graphActions[AT_PREITERATION].insert(action);
+  return insertResult.second;
+}
+
+bool OptimizableGraph::removePreIterationAction(HyperGraphAction* action)
+{
+  return _graphActions[AT_PREITERATION].erase(action) > 0;
+}
+
+bool OptimizableGraph::removePostIterationAction(HyperGraphAction* action)
+{
+  return _graphActions[AT_POSTITERATION].erase(action) > 0;
 }
 
 } // end namespace

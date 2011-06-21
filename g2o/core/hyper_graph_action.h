@@ -26,54 +26,84 @@
 
 namespace g2o {
 
-  //! Abstract action that operates on a graph entity
-  class HyperGraphElementAction{
-  public:
-    struct Parameters{
-      virtual ~Parameters();
-    };
-    typedef std::map<std::string, HyperGraphElementAction*> ActionMap;
-    //! an action should be instantiated with the typeid.name of the graph element 
-    //! on which it operates
-    HyperGraphElementAction(const std::string& typeName_="");
+  /**
+   * \brief Abstract action that operates on an entire graph
+   */
+  class HyperGraphAction {
+    public:
+      class Parameters {
+        public:
+          virtual ~Parameters();
+      };
 
-    //! redefine this to do the action stuff. If successful, the action returns a pointer to itself
-    virtual HyperGraphElementAction* operator()(HyperGraph::HyperGraphElement* element, Parameters* parameters);
+      class ParametersIteration : public Parameters {
+        public:
+          explicit ParametersIteration(int iter);
+          int iteration;
+      };
 
-    //! redefine this to do the action stuff. If successful, the action returns a pointer to itself
-    virtual HyperGraphElementAction* operator()(const HyperGraph::HyperGraphElement* element, Parameters* parameters);
+      virtual ~HyperGraphAction();
 
-    //! destroyed actions release the memory
-    virtual ~HyperGraphElementAction();
-    
-    //! returns the typeid name of the action
-    inline const std::string& typeName() const { return _typeName;}
-
-    //! returns the name of an action, e.g "draw"
-    const std::string name() const{ return _name;}
-  protected:
-    std::string _typeName;
-    std::string _name;
+      /**
+       * re-implement to carry out an action given the graph
+       */
+      virtual HyperGraphAction* operator()(const HyperGraph* graph, Parameters* parameters = 0);
   };
 
-  //! collection of actions calls contains homogeneous actions operating on different types
-  //! all collected actions have the same name and should have the same functionality
+  /**
+   * \brief Abstract action that operates on a graph entity
+   */
+  class HyperGraphElementAction{
+    public:
+      struct Parameters{
+        virtual ~Parameters();
+      };
+      typedef std::map<std::string, HyperGraphElementAction*> ActionMap;
+      //! an action should be instantiated with the typeid.name of the graph element 
+      //! on which it operates
+      HyperGraphElementAction(const std::string& typeName_="");
+
+      //! redefine this to do the action stuff. If successful, the action returns a pointer to itself
+      virtual HyperGraphElementAction* operator()(HyperGraph::HyperGraphElement* element, Parameters* parameters);
+
+      //! redefine this to do the action stuff. If successful, the action returns a pointer to itself
+      virtual HyperGraphElementAction* operator()(const HyperGraph::HyperGraphElement* element, Parameters* parameters);
+
+      //! destroyed actions release the memory
+      virtual ~HyperGraphElementAction();
+
+      //! returns the typeid name of the action
+      const std::string& typeName() const { return _typeName;}
+
+      //! returns the name of an action, e.g "draw"
+      const std::string& name() const{ return _name;}
+    protected:
+      std::string _typeName;
+      std::string _name;
+  };
+
+  /**
+   * \brief collection of actions
+   *
+   * collection of actions calls contains homogeneous actions operating on different types
+   * all collected actions have the same name and should have the same functionality
+   */
   class HyperGraphElementActionCollection: public HyperGraphElementAction{
-  public:
-    //! constructor. name_ is the name of the action e.g.draw).
-    HyperGraphElementActionCollection(const std::string& name_);
-    //! destructor: it deletes all actions in the pool.
-    virtual ~HyperGraphElementActionCollection();
-    //! calling functions, they return a pointer to the instance of action in actionMap
-    //! that was active on element
-    virtual HyperGraphElementAction* operator()(HyperGraph::HyperGraphElement* element, Parameters* parameters);
-    virtual HyperGraphElementAction* operator()(const HyperGraph::HyperGraphElement* element, Parameters* parameters);
-    ActionMap& actionMap() {return _actionMap;}
-    //! inserts an action in the pool. The action should have the same name of the container.
-    //! returns falseon failure (the container has a different name than the action);
-    bool registerAction(HyperGraphElementAction* action);
-  protected:
-    ActionMap _actionMap;
+    public:
+      //! constructor. name_ is the name of the action e.g.draw).
+      HyperGraphElementActionCollection(const std::string& name_);
+      //! destructor: it deletes all actions in the pool.
+      virtual ~HyperGraphElementActionCollection();
+      //! calling functions, they return a pointer to the instance of action in actionMap
+      //! that was active on element
+      virtual HyperGraphElementAction* operator()(HyperGraph::HyperGraphElement* element, Parameters* parameters);
+      virtual HyperGraphElementAction* operator()(const HyperGraph::HyperGraphElement* element, Parameters* parameters);
+      ActionMap& actionMap() {return _actionMap;}
+      //! inserts an action in the pool. The action should have the same name of the container.
+      //! returns falseon failure (the container has a different name than the action);
+      bool registerAction(HyperGraphElementAction* action);
+    protected:
+      ActionMap _actionMap;
   };
 
   /**
@@ -83,41 +113,47 @@ namespace g2o {
    * one can use ti to register a collection of actions
    */
   class HyperGraphActionLibrary{
-  public:
+    public:
+      //! return the single instance of the HyperGraphActionLibrary
+      static HyperGraphActionLibrary* instance();
+      //! free the instance
+      static void destroy();
 
-    //! return the single instance of the HyperGraphActionLibrary
-    static HyperGraphActionLibrary* instance();
-    //! free the instance
-    static void destroy();
-
-    // returns a pointer to a collection indexed by name
-    HyperGraphElementAction* actionByName(const std::string& name);
-    // registers a basic action in the pool. If necessary a container is created
-    bool registerAction(HyperGraphElementAction* action);
-    inline HyperGraphElementAction::ActionMap& actionMap() {return _actionMap;}
-  protected:
-    HyperGraphActionLibrary();
-    ~HyperGraphActionLibrary();
-    HyperGraphElementAction::ActionMap _actionMap;
-  private:
-    static HyperGraphActionLibrary* actionLibInstance;
+      // returns a pointer to a collection indexed by name
+      HyperGraphElementAction* actionByName(const std::string& name);
+      // registers a basic action in the pool. If necessary a container is created
+      bool registerAction(HyperGraphElementAction* action);
+      inline HyperGraphElementAction::ActionMap& actionMap() {return _actionMap;}
+    protected:
+      HyperGraphActionLibrary();
+      ~HyperGraphActionLibrary();
+      HyperGraphElementAction::ActionMap _actionMap;
+    private:
+      static HyperGraphActionLibrary* actionLibInstance;
   };
 
-
+  /**
+   * apply an action to all the elements of the graph.
+   */
   void applyAction(HyperGraph* graph, HyperGraphElementAction* action, HyperGraphElementAction::Parameters* parameters=0, const std::string& typeName="");
 
-  // write in gnuplot
+  /**
+   * brief write into gnuplot
+   */
   class WriteGnuplotAction: public HyperGraphElementAction{
-  public:
-    struct Parameters: public HyperGraphElementAction::Parameters{
-      std::ostream* os;
-    };
-    WriteGnuplotAction(const std::string& typeName_);
+    public:
+      struct Parameters: public HyperGraphElementAction::Parameters{
+        std::ostream* os;
+      };
+      WriteGnuplotAction(const std::string& typeName_);
   };
 
-  class DrawAction: public HyperGraphElementAction{
-  public:
-    DrawAction(const std::string& typeName_);
+  /**
+   * \brief draw actions
+   */
+  class DrawAction : public HyperGraphElementAction{
+    public:
+      DrawAction(const std::string& typeName_);
   };
   
 };
