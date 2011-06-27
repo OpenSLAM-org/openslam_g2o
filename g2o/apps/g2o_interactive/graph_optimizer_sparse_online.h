@@ -24,7 +24,7 @@ namespace g2o {
   class SparseOptimizerOnline : public SparseOptimizer
   {
     public:
-      SparseOptimizerOnline();
+      explicit SparseOptimizerOnline(bool pcg=false);
       virtual ~SparseOptimizerOnline();
 
       int optimize(int iterations, bool online = false);
@@ -47,6 +47,7 @@ namespace g2o {
       
     protected:
       FILE* _gnuplot;
+      bool _usePcg;
   };
 
 } // end namespace

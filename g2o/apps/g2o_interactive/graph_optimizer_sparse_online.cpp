@@ -23,17 +23,29 @@
 #include "g2o/core/block_solver.h"
 #include "g2o/core/solver_factory.h"
 
+#include "g2o/solvers/pcg/linear_solver_pcg.h"
+
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 using namespace std;
 
+#define DIM_TO_SOLVER(p, l) BlockSolver< BlockSolverTraits<p, l> >
+
+#define ALLOC_PCG(s, p, l) \
+  if (1) { \
+    std::cerr << "# Using PCG online poseDim " << p << " landMarkDim " << l << " blockordering 1" << std::endl; \
+    LinearSolverPCG< DIM_TO_SOLVER(p, l)::PoseMatrixType >* linearSolver = new LinearSolverPCG<DIM_TO_SOLVER(p, l)::PoseMatrixType>(); \
+    linearSolver->setMaxIterations(6); \
+    s = new DIM_TO_SOLVER(p, l)(opt, linearSolver); \
+  } else (void)0
+
 namespace g2o {
 
-SparseOptimizerOnline::SparseOptimizerOnline() :
+SparseOptimizerOnline::SparseOptimizerOnline(bool pcg) :
   SparseOptimizer(),
   slamDimension(3), newEdges(0), batchStep(true), vizWithGnuplot(false),
-  _gnuplot(0)
+  _gnuplot(0), _usePcg(pcg)
 {
 }
 
@@ -62,6 +74,9 @@ int SparseOptimizerOnline::optimize(int iterations, bool online)
       return 0;
     }
   }
+
+  if (_usePcg)
+    batchStep = true;
 
   if (! online || batchStep) {
     //cerr << "BATCH" << endl;
@@ -158,15 +173,36 @@ bool SparseOptimizerOnline::updateInitialization(HyperGraph::VertexSet& vset, Hy
   return result;
 }
 
+static Solver* createSolver(SparseOptimizer* opt, const std::string& solverName)
+{
+  g2o::Solver* s = 0;
+  if (solverName == "pcg3_2_cholmod") {
+    ALLOC_PCG(s, 3, 2);
+  }
+  else if (solverName == "pcg6_3_cholmod") {
+    ALLOC_PCG(s, 6, 3);
+  }
+  return s;
+}
+
 bool SparseOptimizerOnline::initSolver(int dimension, int /*batchEveryN*/)
 {
   slamDimension = dimension;
   SolverFactory* solverFactory = SolverFactory::instance();
   SolverProperty solverProperty;
-  if (dimension == 3) {
-    setSolver(solverFactory->construct("fix3_2_cholmod", this, solverProperty));
-  } else {
-    setSolver(solverFactory->construct("fix6_3_cholmod", this, solverProperty));
+  if (_usePcg) {
+    if (dimension == 3) {
+      setSolver(createSolver(this, "pcg3_2_cholmod"));
+    } else {
+      setSolver(createSolver(this, "pcg6_3_cholmod"));
+    }
+  }
+  else {
+    if (dimension == 3) {
+      setSolver(solverFactory->construct("fix3_2_cholmod", this, solverProperty));
+    } else {
+      setSolver(solverFactory->construct("fix6_3_cholmod", this, solverProperty));
+    }
   }
   solver()->setSchur(false);
   if (! solver()) {
