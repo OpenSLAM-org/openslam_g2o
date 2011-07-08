@@ -17,13 +17,15 @@
 #ifndef OPENMP_MUTEX
 #define OPENMP_MUTEX
 
-#ifdef _OPENMP
+#include "g2o/config.h"
+
+#ifdef G2O_OPENMP
 #include <omp.h>
 #endif
 
 namespace g2o {
 
-#ifdef _OPENMP
+#ifdef G2O_OPENMP
 
   /**
    * \brief Mutex realized via OpenMP

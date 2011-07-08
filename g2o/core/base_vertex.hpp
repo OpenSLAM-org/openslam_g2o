@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 template <int D, typename T>
 BaseVertex<D, T>::BaseVertex() :
   OptimizableGraph::Vertex(),
@@ -31,14 +32,11 @@ void BaseVertex<D, T>::setUncertainty(double* d) {
 template <int D, typename T>
 double BaseVertex<D, T>::solveDirect(double lambda) {
   Matrix <double, D, D> tempA=_hessian + Matrix <double, D, D>::Identity()*lambda;
-  Matrix <double, D, 1> dx=tempA.inverse()*_b;
   double det=tempA.determinant();
   if (g2o_isnan(det) || det < std::numeric_limits<double>::epsilon())
     return det;
-  double dxv [D];
-  for (int i=0; i<D; i++)
-    dxv[i]=dx[i];
-  oplus(dxv);
+  Matrix <double, D, 1> dx=tempA.llt().solve(_b);
+  oplus(&dx[0]);
   return det;
 }
 

@@ -9,9 +9,9 @@
 // g2o is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
+// GNU General Public License for more details.
 // 
-// You should have received a copy of the GNU Lesser General Public License
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "graph_optimizer_sparse_incremental.h"
@@ -36,6 +36,9 @@ using namespace std;
 namespace g2o {
 
   namespace {
+    /**
+     * \brief backing up some information about the vertex
+     */
     struct VertexBackup
     {
       int tempIndex;
@@ -63,6 +66,7 @@ namespace g2o {
     _permutedUpdate = cholmod_allocate_triplet(1000, 1000, 1024, 0, CHOLMOD_REAL, &_cholmodCommon);
     _L = 0;
     _cholmodFactor = 0;
+    _solverInterface = 0;
   }
 
   SparseOptimizerIncremental::~SparseOptimizerIncremental()
@@ -79,8 +83,6 @@ namespace g2o {
 
   int SparseOptimizerIncremental::optimize(int iterations, bool online)
   {
-    //return SparseOptimizer::optimize(iterations, online);
-
     (void) iterations; // we only do one iteration anyhow
     Solver* solver = _solver;
     solver->init(online);
@@ -138,17 +140,8 @@ namespace g2o {
 
       ok = solver->solve();
 
-      // get the current cholesky factor
-      if (slamDimension == 3) {
-        BlockSolver<BlockSolverTraits<3, 2> >* bs = dynamic_cast<BlockSolver<BlockSolverTraits<3, 2> >*>(solver);
-        LinearSolverCholmodOnline<Matrix3d>* s = dynamic_cast<LinearSolverCholmodOnline<Matrix3d>*>(bs->linearSolver());
-        _L = s->L();
-      }
-      else if (slamDimension == 6) {
-        BlockSolver<BlockSolverTraits<6, 3> >* bs = dynamic_cast<BlockSolver<BlockSolverTraits<6, 3> >*>(solver);
-        LinearSolverCholmodOnline<Matrix<double, 6, 6> >* s = dynamic_cast<LinearSolverCholmodOnline<Matrix<double, 6, 6> >*>(bs->linearSolver());
-        _L = s->L();
-      }
+      // get the current cholesky factor along with the permutation
+      _L = _solverInterface->L();
       if (_perm.size() < (int)_L->n)
         _perm.resize(2*_L->n);
       int* p = (int*)_L->Perm;
@@ -163,16 +156,7 @@ namespace g2o {
         int iBase = v->colInHessian();
         v->copyB(solver->b() + iBase);
       }
-      if (slamDimension == 3) {
-        BlockSolver<BlockSolverTraits<3, 2> >* bs = static_cast<BlockSolver<BlockSolverTraits<3, 2> >*>(solver);
-        LinearSolverCholmodOnline<Matrix3d>* s = static_cast<LinearSolverCholmodOnline<Matrix3d>*>(bs->linearSolver());
-        s->solve(solver->x(), solver->b());
-      }
-      else if (slamDimension == 6) {
-        BlockSolver<BlockSolverTraits<6, 3> >* bs = static_cast<BlockSolver<BlockSolverTraits<6, 3> >*>(solver);
-        LinearSolverCholmodOnline<Matrix<double, 6, 6> >* s = static_cast<LinearSolverCholmodOnline<Matrix<double, 6, 6> >*>(bs->linearSolver());
-        s->solve(solver->x(), solver->b());
-      }
+      _solverInterface->solve(solver->x(), solver->b());
     }
 
     update(solver->x());
@@ -389,16 +373,7 @@ namespace g2o {
     cholmod_sparse* updatePermuted = cholmod_triplet_to_sparse(_permutedUpdate, _permutedUpdate->nnz, &_cholmodCommon);
     //writeCCSMatrix("update-permuted.txt", updatePermuted->nrow, updatePermuted->ncol, (int*)updatePermuted->p, (int*)updatePermuted->i, (double*)updatePermuted2->x, false);
 
-    if (slamDimension == 3) {
-      BlockSolver<BlockSolverTraits<3, 2> >* bs = dynamic_cast<BlockSolver<BlockSolverTraits<3, 2> >*>(solver());
-      LinearSolverCholmodOnline<Matrix3d>* s = dynamic_cast<LinearSolverCholmodOnline<Matrix3d>*>(bs->linearSolver());
-      s->choleskyUpdate(updatePermuted);
-    }
-    else if (slamDimension == 6) {
-      BlockSolver<BlockSolverTraits<6, 3> >* bs = dynamic_cast<BlockSolver<BlockSolverTraits<6, 3> >*>(solver());
-      LinearSolverCholmodOnline<Matrix<double, 6, 6> >* s = dynamic_cast<LinearSolverCholmodOnline<Matrix<double, 6, 6> >*>(bs->linearSolver());
-      s->choleskyUpdate(updatePermuted);
-    }
+    _solverInterface->choleskyUpdate(updatePermuted);
 
     cholmod_free_sparse(&updatePermuted, &_cholmodCommon);
 
@@ -486,15 +461,15 @@ namespace g2o {
       setSolver(createSolver(this, "fix3_2_cholmod"));
       BlockSolver<BlockSolverTraits<3, 2> >* bs = dynamic_cast<BlockSolver<BlockSolverTraits<3, 2> >*>(solver());
       LinearSolverCholmodOnline<Matrix3d>* s = dynamic_cast<LinearSolverCholmodOnline<Matrix3d>*>(bs->linearSolver());
-      s->cmember = &_cmember;
-      s->batchEveryN = batchEveryN;
+      _solverInterface = s;
     } else {
       setSolver(createSolver(this, "fix6_3_cholmod"));
       BlockSolver<BlockSolverTraits<6, 3> >* bs = dynamic_cast<BlockSolver<BlockSolverTraits<6, 3> >*>(solver());
       LinearSolverCholmodOnline<Matrix<double, 6, 6> >* s = dynamic_cast<LinearSolverCholmodOnline<Matrix<double, 6, 6> >*>(bs->linearSolver());
-      s->cmember = &_cmember;
-      s->batchEveryN = batchEveryN;
+      _solverInterface = s;
     }
+    _solverInterface->cmember = &_cmember;
+    _solverInterface->batchEveryN = batchEveryN;
     solver()->setSchur(false);
     if (! solver()) {
       cerr << "Error allocating solver. Allocating CHOLMOD solver failed!" << endl;

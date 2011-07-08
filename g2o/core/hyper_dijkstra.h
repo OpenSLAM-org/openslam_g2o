@@ -30,7 +30,8 @@ namespace g2o{
     };
 
     struct TreeAction {
-      virtual double perform(HyperGraph::Vertex* v, HyperGraph::Vertex* vParent, HyperGraph::Edge* e)=0;
+      virtual double perform(HyperGraph::Vertex* v, HyperGraph::Vertex* vParent, HyperGraph::Edge* e);
+      virtual double perform(HyperGraph::Vertex* v, HyperGraph::Vertex* vParent, HyperGraph::Edge* e, double distance);
     };
 
     
@@ -76,7 +77,7 @@ namespace g2o{
 
 
     static void computeTree(AdjacencyMap& amap);
-    static void visitAdjacencyMap(AdjacencyMap& amap, TreeAction* action);
+    static void visitAdjacencyMap(AdjacencyMap& amap, TreeAction* action, bool useDistance=false);
 
   protected:
     void reset();

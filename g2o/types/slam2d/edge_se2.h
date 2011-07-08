@@ -61,8 +61,16 @@ namespace g2o {
       }
 
       virtual int measurementDimension() const {return 3;}
-      
 
+      virtual bool setMeasurementFromState() {
+        const VertexSE2* v1 = static_cast<const VertexSE2*>(_vertices[0]);
+        const VertexSE2* v2 = static_cast<const VertexSE2*>(_vertices[1]);
+	_measurement = v1->estimate().inverse()*v2->estimate();
+	_inverseMeasurement = _measurement.inverse();
+	return true;
+      }
+
+      
       virtual double initialEstimatePossible(const OptimizableGraph::VertexSet& , OptimizableGraph::Vertex* ) { return 1.;}
       virtual void initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to);
 #ifndef NUMERIC_JACOBIAN_TWO_D_TYPES

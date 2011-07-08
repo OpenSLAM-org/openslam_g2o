@@ -21,6 +21,7 @@
 #include <limits>
 
 #include "base_edge.h"
+#include "g2o/config.h"
 
 namespace g2o {
 

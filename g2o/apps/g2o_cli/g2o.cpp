@@ -113,7 +113,9 @@ int main(int argc, char** argv)
   bool listSolvers;
   bool incremental;
   bool guiOut;
+  int gaugeId;
   bool robustKernel;
+  bool computeMarginals;
   double huberWidth;
   double lambdaInit;
   int updateGraphEachN = 10;
@@ -132,6 +134,8 @@ int main(int argc, char** argv)
   arg.param("method", strMethod, "Gauss", "Gauss or Levenberg");
   arg.param("gnudump", gnudump, "", "dump to gnuplot data file");
   arg.param("robustKernel", robustKernel, false, "use robust error functions");
+  arg.param("computeMarginals", computeMarginals, false, "computes the marginal covariances of something. FOR TESTING ONLY");
+  arg.param("gaugeId", gaugeId, -1, "force the gauge");
   arg.param("huberWidth", huberWidth, -1., "width for the robust Huber Kernel (only if robustKernel)");
   arg.param("o", outputfilename, "", "output final version of the graph");
   arg.param("solver", strSolver, "var", "specify which solver to use underneat\n\t {var, fix3_2, fix6_3, fix_7_3}");
@@ -215,7 +219,16 @@ int main(int argc, char** argv)
 
   // check for vertices to fix to remove DoF
   bool gaugeFreedom = optimizer.gaugeFreedom();
-  OptimizableGraph::Vertex* gauge=optimizer.findGauge();
+  OptimizableGraph::Vertex* gauge=0;
+  if (gaugeId>-1){
+    HyperGraph::VertexIDMap::iterator gIt = optimizer.vertices().find(gaugeId);
+    if (gIt!=optimizer.vertices().end())
+      gauge = (OptimizableGraph::Vertex*)gIt->second;
+    else
+      gauge=optimizer.findGauge();
+  } else {
+      gauge=optimizer.findGauge();
+  }
   if (gaugeFreedom) {
     if (! gauge) {
       cerr <<  "# cannot find a vertex to fix in this thing" << endl;
@@ -476,6 +489,34 @@ int main(int argc, char** argv)
     int i=optimizer.optimize(maxIterations);
     if (maxIterations > 0 && !i){
       cerr << "Cholesky failed, result might be invalid" << endl;
+    } else if (computeMarginals){
+      std::vector<std::pair<int, int> > blockIndices;
+      for (size_t i=0; i<optimizer.activeVertices().size(); i++){
+        OptimizableGraph::Vertex* v=optimizer.activeVertices()[i];
+        if (v->tempIndex()>=0){
+          blockIndices.push_back(make_pair(v->tempIndex(), v->tempIndex()));
+        }
+        if (v->tempIndex()>0){
+          blockIndices.push_back(make_pair(v->tempIndex()-1, v->tempIndex()));
+        }
+      }
+      SparseBlockMatrix<MatrixXd> spinv;
+      if (optimizer.computeMarginals(spinv, blockIndices)) {
+        for (size_t i=0; i<optimizer.activeVertices().size(); i++){
+          OptimizableGraph::Vertex* v=optimizer.activeVertices()[i];
+          cerr << "Vertex id:" << v->id() << endl;
+          if (v->tempIndex()>=0){
+            cerr << "inv block :" << v->tempIndex() << ", " << v->tempIndex()<< endl;
+            cerr << *(spinv.block(v->tempIndex(), v->tempIndex()));
+            cerr << endl;
+          }
+          if (v->tempIndex()>0){
+            cerr << "inv block :" << v->tempIndex()-1 << ", " << v->tempIndex()<< endl;
+            cerr << *(spinv.block(v->tempIndex()-1, v->tempIndex()));
+            cerr << endl;
+          }
+        }
+      }
     }
 
     if (statsFile!=""){

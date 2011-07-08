@@ -25,6 +25,7 @@
 #include <Eigen/Core>
 
 #include "matrix_structure.h"
+#include "g2o/config.h"
 
 namespace g2o {
   using namespace Eigen;
@@ -75,6 +76,7 @@ class SparseBlockMatrix {
 
     ~SparseBlockMatrix();
 
+    
     //! this zeroes all the blocks. If dealloc=true the blocks are removed from memory
     void clear(bool dealloc=false) ;
 

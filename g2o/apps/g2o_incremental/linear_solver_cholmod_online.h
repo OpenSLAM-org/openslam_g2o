@@ -9,9 +9,9 @@
 // g2o is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
+// GNU General Public License for more details.
 // 
-// You should have received a copy of the GNU Lesser General Public License
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef LINEAR_SOLVER_CHOLMOD_ONLINE
@@ -23,8 +23,25 @@
 
 namespace g2o {
 
+/**
+ * \brief generic interface for the online solver
+ */
+class LinearSolverCholmodOnlineInterface
+{
+  public:
+    LinearSolverCholmodOnlineInterface() : cmember(0), batchEveryN(100) {}
+    virtual int choleskyUpdate(cholmod_sparse* update) = 0;
+    virtual bool solve(double* x, double* b) = 0;
+    virtual cholmod_factor* L() const = 0;
+    VectorXi* cmember;
+    int batchEveryN;
+};
+
+/**
+ * \brief linear solver which allows to update the cholesky factor
+ */
 template <typename MatrixType>
-class LinearSolverCholmodOnline : public LinearSolver<MatrixType>
+class LinearSolverCholmodOnline : public LinearSolver<MatrixType>, public LinearSolverCholmodOnlineInterface
 {
   public:
     LinearSolverCholmodOnline() :
@@ -62,13 +79,10 @@ class LinearSolverCholmodOnline : public LinearSolver<MatrixType>
     {
       cholmod_free_factor(&_cholmodFactor, &_cholmodCommon);
       _cholmodFactor = 0;
-      //cerr << __PRETTY_FUNCTION__ << " using cholmod" << endl;
-      fillCholmodExt(A, _cholmodFactor); // _cholmodFactor used as bool, if not existing will copy the whole structure, otherwise only the values
+      fillCholmodExt(A, false);
 
-      if (! _cholmodFactor) {
-        computeSymbolicDecomposition(A);
-        assert(_cholmodFactor && "Symbolic cholesky failed");
-      }
+      computeSymbolicDecomposition(A);
+      assert(_cholmodFactor && "Symbolic cholesky failed");
       double t=get_time();
 
       // setting up b for calling cholmod
@@ -140,9 +154,6 @@ class LinearSolverCholmodOnline : public LinearSolver<MatrixType>
     VectorXi _scalarPermutation, _blockPermutation;
 
   public:
-    VectorXi* cmember;
-    int batchEveryN;
-
     void computeSymbolicDecomposition(const SparseBlockMatrix<MatrixType>& A)
     {
       double t = get_time();
@@ -153,32 +164,10 @@ class LinearSolverCholmodOnline : public LinearSolver<MatrixType>
       if (_blockPermutation.size() < _matrixStructure.n) // double space if resizing
         _blockPermutation.resize(2*_matrixStructure.n);
 
-#if 0
-      // prepare AMD call via CHOLMOD
-      cholmod_sparse auxCholmodSparse;
-      auxCholmodSparse.nzmax = _matrixStructure.nzMax();
-      auxCholmodSparse.nrow = auxCholmodSparse.ncol = _matrixStructure.n;
-      auxCholmodSparse.p = _matrixStructure.Ap;
-      auxCholmodSparse.i = _matrixStructure.Aii;
-      auxCholmodSparse.nz = 0;
-      auxCholmodSparse.x = 0;
-      auxCholmodSparse.z = 0;
-      auxCholmodSparse.stype = 1;
-      auxCholmodSparse.xtype = CHOLMOD_PATTERN;
-      auxCholmodSparse.itype = CHOLMOD_INT;
-      auxCholmodSparse.dtype = CHOLMOD_DOUBLE;
-      auxCholmodSparse.sorted = 1;
-      auxCholmodSparse.packed = 1;
-      int amdStatus = cholmod_amd(&auxCholmodSparse, NULL, 0, _blockPermutation.data(), &_cholmodCommon);
-      if (! amdStatus) {
-        return;
-      }
-#else
       int amdStatus = camd_order(_matrixStructure.n, _matrixStructure.Ap, _matrixStructure.Aii, _blockPermutation.data(), NULL, NULL, cmember->data());
       if (amdStatus != CAMD_OK) {
         std::cerr << "Error while computing ordering" << std::endl;
       }
-#endif
 
       // blow up the permutation to the scalar matrix and extend to include the additional blocks
       if (_scalarPermutation.size() == 0)

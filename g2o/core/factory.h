@@ -18,7 +18,6 @@
 #define FACTORY_H
 
 #include "hyper_graph.h"
-
 #include <string>
 #include <map>
 

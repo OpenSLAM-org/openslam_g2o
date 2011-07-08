@@ -22,7 +22,8 @@
 #include "g2o/stuff/macros.h"
 
 #include <Eigen/Core>
-#include <Eigen/LU>
+#include <Eigen/Dense>
+#include <Eigen/Cholesky>
 #include <stack>
 
 namespace g2o {

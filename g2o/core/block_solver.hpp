@@ -359,7 +359,7 @@ bool BlockSolver<Traits>::solve(){
         tmpEdges[tmpIdx++] = e2;
       }
 
-#     ifdef _OPENMP
+#     ifdef G2O_OPENMP
 #     pragma omp parallel for default (shared)
 #     endif
       for (size_t l=0; l < tmpIdx; ++l) {
@@ -500,7 +500,7 @@ template <typename Traits>
 bool BlockSolver<Traits>::buildSystem()
 {
   // clear b vector
-# ifdef _OPENMP
+# ifdef G2O_OPENMP
 # pragma omp parallel for default (shared) if (_optimizer->indexMapping().size() > 1000)
 # endif
   for (int i = 0; i < static_cast<int>(_optimizer->indexMapping().size()); ++i) {
@@ -516,7 +516,7 @@ bool BlockSolver<Traits>::buildSystem()
 
   // resetting the terms for the pairwise constraints
   // built up the current system by storing the Hessian blocks in the edges and vertices
-# ifdef _OPENMP
+# ifdef G2O_OPENMP
 # pragma omp parallel for default (shared) if (_optimizer->activeEdges().size() > 100)
 # endif
   for (int k = 0; k < static_cast<int>(_optimizer->activeEdges().size()); ++k) {
@@ -525,7 +525,7 @@ bool BlockSolver<Traits>::buildSystem()
   }
 
   // flush the current system in a sparse block matrix
-# ifdef _OPENMP
+# ifdef G2O_OPENMP
 # pragma omp parallel for default (shared) if (_optimizer->indexMapping().size() > 1000)
 # endif
   for (int i = 0; i < static_cast<int>(_optimizer->indexMapping().size()); ++i) {
@@ -543,14 +543,14 @@ bool BlockSolver<Traits>::buildSystem()
 template <typename Traits>
 bool BlockSolver<Traits>::setLambda(double lambda)
 {
-# ifdef _OPENMP
+# ifdef G2O_OPENMP
 # pragma omp parallel for default (shared) if (_numPoses > 100)
 # endif
   for (int i = 0; i < _numPoses; i++) {
     PoseMatrixType *b=_Hpp->block(i,i);
     b->diagonal().array() += lambda;
   }
-# ifdef _OPENMP
+# ifdef G2O_OPENMP
 # pragma omp parallel for default (shared) if (_numLandmarks > 100)
 # endif
   for (int i = 0; i < _numLandmarks; i++) {

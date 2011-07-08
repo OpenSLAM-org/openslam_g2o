@@ -171,6 +171,42 @@ class LinearSolverCSparse : public LinearSolver<MatrixType>
       return ok;
     }
 
+    virtual bool solvePattern(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, const SparseBlockMatrix<MatrixType>& A) {
+      fillCSparse(A, _symbolicDecomposition);
+      // perform symbolic cholesky once
+      if (_symbolicDecomposition == 0) {
+        computeSymbolicDecomposition(A);
+        assert(_symbolicDecomposition && "Symbolic cholesky failed");
+      }
+      // re-allocate the temporary workspace for cholesky
+      if (_csWorkspaceSize < _ccsA->n) {
+        _csWorkspaceSize = 2 * _ccsA->n;
+        delete[] _csWorkspace;
+        _csWorkspace = new double[_csWorkspaceSize];
+        delete[] _csIntWorkspace;
+        _csIntWorkspace = new int[2*_csWorkspaceSize];
+      }
+
+
+      int ok = 1;
+      csn* numericCholesky = cs_chol_workspace(_ccsA, _symbolicDecomposition, _csIntWorkspace, _csWorkspace);
+      if (numericCholesky) {
+        MarginalCovarianceCholesky mcc;
+        mcc.setCholeskyFactor(_ccsA->n, numericCholesky->L->p, numericCholesky->L->i, numericCholesky->L->x, _symbolicDecomposition->pinv);
+	mcc.computeCovariance(spinv, A.rowBlockIndices(), blockIndices);
+        cs_nfree(numericCholesky);
+      } else {
+        ok = 0;
+        std::cerr << "inverse fail (numeric decomposition)" << std::endl;
+      }
+
+      if (globalStats){
+        globalStats->choleskyNNZ = _symbolicDecomposition->lnz;
+      }
+
+      return ok;
+    }
+
     //! do the AMD ordering on the blocks or on the scalar matrix
     bool blockOrdering() const { return _blockOrdering;}
     void setBlockOrdering(bool blockOrdering) { _blockOrdering = blockOrdering;}

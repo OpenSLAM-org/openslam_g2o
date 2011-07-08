@@ -164,8 +164,13 @@ namespace g2o {
 
     //! push the estimate of a subset of the variables onto a stack
     void push(SparseOptimizer::VertexContainer& vlist);
+    //! push the estimate of a subset of the variables onto a stack
+    void push(HyperGraph::VertexSet& vlist);
     //! pop (restore) the estimate a subset of the variables from the stack
     void pop(SparseOptimizer::VertexContainer& vlist);
+    //! pop (restore) the estimate a subset of the variables from the stack
+    void pop(HyperGraph::VertexSet& vlist);
+
     //! ignore the latest stored element on the stack, remove it from the stack but do not restore the estimate
     void discardTop(SparseOptimizer::VertexContainer& vlist);
 

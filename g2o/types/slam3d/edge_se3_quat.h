@@ -77,6 +77,8 @@ namespace g2o {
     
     virtual int measurementDimension() const {return 7;}
 
+    virtual bool setMeasurementFromState() ;
+
     virtual bool read(std::istream& is);
     virtual bool write(std::ostream& os) const;
 

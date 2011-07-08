@@ -167,7 +167,7 @@ namespace g2o {
          */
         virtual int estimateDimension() const;
 
-
+	
         /**
          * sets the initial estimate from an array of double
          * @return true on success
@@ -282,6 +282,12 @@ namespace g2o {
         //! returns the dimension of the measurement in the extended representation which is used
 	//! by get/setMeasurement;
         virtual int measurementDimension() const;
+
+        /**
+         * sets the estimate to have a zero error, based on the current value of the state variables
+	 * returns false if not supported.
+        */
+	virtual bool setMeasurementFromState();
 
         /**
          * robustify the error of the edge using an robust kernel/M-estimator
@@ -478,6 +484,9 @@ namespace g2o {
     virtual void pop(HyperGraph::VertexSet& vset);
     //! ignore the latest stored element on the stack, remove it from the stack but do not restore the estimate
     virtual void discardTop(HyperGraph::VertexSet& vset);
+
+    //! fixes/releases a set of vertices
+    virtual void setFixed(HyperGraph::VertexSet& vset, bool fixed);
 
     /**
      * set the renamed types lookup from a string, format is for example:

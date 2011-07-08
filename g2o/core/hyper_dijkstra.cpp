@@ -24,6 +24,19 @@ namespace g2o{
 
   using namespace std;
 
+  double HyperDijkstra::TreeAction::perform(HyperGraph::Vertex* v, HyperGraph::Vertex* vParent, HyperGraph::Edge* e){
+    (void) v;
+    (void) vParent;
+    (void) e;
+    return std::numeric_limits<double>::max();
+  }
+
+  double HyperDijkstra::TreeAction::perform(HyperGraph::Vertex* v, HyperGraph::Vertex* vParent, HyperGraph::Edge* e, double distance){
+    if (distance==-1)
+      return perform (v,vParent,e);
+    return std::numeric_limits<double>::max();
+  }
+
   HyperDijkstra::AdjacencyMapEntry::AdjacencyMapEntry(HyperGraph::Vertex* child_, HyperGraph::Vertex* parent_, 
       HyperGraph::Edge* edge_, double distance_)
   {
@@ -144,8 +157,9 @@ namespace g2o{
   }
 
 
-  void HyperDijkstra::visitAdjacencyMap(AdjacencyMap& amap, TreeAction* action)
+  void HyperDijkstra::visitAdjacencyMap(AdjacencyMap& amap, TreeAction* action, bool useDistance)
   {
+    
     typedef std::deque<HyperGraph::Vertex*> Deque;
     Deque q;
     // scans for the vertices without the parent (whcih are the roots of the trees) and applies the action to them.
@@ -157,17 +171,21 @@ namespace g2o{
       }
     }
 
+    //std::cerr << "q.size()" << q.size() << endl;
     int count=0;
     while (! q.empty()){
       HyperGraph::Vertex* parent=q.front();
       q.pop_front();
       count++;
       AdjacencyMap::iterator parentIt=amap.find(parent);
-      if (parentIt==amap.end())
+      if (parentIt==amap.end()) {
         continue;
+      }
+      //cerr << "parent= " << parent << " parent id= " << parent->id() << "\t children id =";
       HyperGraph::VertexSet& childs(parentIt->second.children());
       for (HyperGraph::VertexSet::iterator childsIt=childs.begin(); childsIt!=childs.end(); childsIt++){
         HyperGraph::Vertex* child=*childsIt;
+	//cerr << child->id();
         AdjacencyMap::iterator adjacencyIt=amap.find(child);
         assert (adjacencyIt!=amap.end());
         HyperGraph::Edge* edge=adjacencyIt->second.edge();  
@@ -175,9 +193,14 @@ namespace g2o{
         assert(adjacencyIt->first==child);
         assert(adjacencyIt->second.child()==child);
         assert(adjacencyIt->second.parent()==parent);
-        action->perform(child, parent, edge);
+	if (! useDistance) {
+	  action->perform(child, parent, edge);
+	} else {
+	  action->perform(child, parent, edge, adjacencyIt->second.distance());
+	}
         q.push_back(child);
-      } 
+      }
+      //cerr << endl;
     }
 
   }

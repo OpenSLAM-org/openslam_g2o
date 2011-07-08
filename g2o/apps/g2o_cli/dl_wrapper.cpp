@@ -27,6 +27,17 @@
 #include <dlfcn.h>
 #endif
 
+#ifdef __APPLE__
+#define SO_EXT "dylib"
+#define SO_EXT_LEN 5
+#elif defined (WINDOWS) || defined (CYGWIN)
+#define SO_EXT "dll"
+#define SO_EXT_LEN 3
+#else // Linux
+#define SO_EXT "so"
+#define SO_EXT_LEN 2
+#endif
+
 using namespace std;
 
 namespace g2o {
@@ -53,6 +64,18 @@ int DlWrapper::openLibraries(const std::string& directory, const std::string& pa
     const string& filename = matchingFiles[i];
     if (find(_filenames.begin(), _filenames.end(), filename) != _filenames.end())
       continue;
+
+    // If we are doing a release build, the wildcards will pick up the
+    // suffixes; unfortunately the "_rd" extension means that we
+    // don't seem to be able to filter out the incompatible files using a
+    // wildcard expansion to wordexp.
+
+#ifndef G2O_LIBRARY_POSTFIX
+    if ((filename.rfind(string("_d.") + SO_EXT) == filename.length() - 3 - SO_EXT_LEN)
+        || (filename.rfind(string("_rd.") + SO_EXT) == filename.length() - 4 - SO_EXT_LEN)
+        || (filename.rfind(string("_s.") + SO_EXT) == filename.length() - 3 - SO_EXT_LEN))
+        continue;
+#endif
 
     // open the lib
     //cerr << "loading " << filename << endl;

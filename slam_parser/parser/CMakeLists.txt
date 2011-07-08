@@ -15,6 +15,7 @@ SET_TARGET_PROPERTIES(parser_library PROPERTIES OUTPUT_NAME ${LIB_PREFIX}parser)
 
 ADD_EXECUTABLE(test_slam_parser test_slam_parser.cpp)
 TARGET_LINK_LIBRARIES(test_slam_parser parser_library)
+SET_TARGET_PROPERTIES(test_slam_parser PROPERTIES OUTPUT_NAME test_slam_parser${EXE_POSTFIX})
 
 INSTALL(TARGETS parser_library
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

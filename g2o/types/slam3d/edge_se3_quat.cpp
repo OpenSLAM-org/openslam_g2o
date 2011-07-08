@@ -41,6 +41,14 @@ namespace g2o {
   }
 
 
+  bool EdgeSE3::setMeasurementFromState(){
+    const VertexSE3* v1 = dynamic_cast<const VertexSE3*>(_vertices[0]);
+    const VertexSE3* v2 = dynamic_cast<const VertexSE3*>(_vertices[1]);
+    _measurement = (v1->estimate().inverse()*v2->estimate());
+    _inverseMeasurement = _measurement.inverse();
+    return true;
+  }
+
   bool EdgeSE3::read(std::istream& is)
   {
     for (int i=0; i<7; i++)

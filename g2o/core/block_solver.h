@@ -20,6 +20,7 @@
 #include "solver.h"
 #include "linear_solver.h"
 #include "sparse_block_matrix.h"
+#include "g2o/config.h"
 
 namespace g2o {
   using namespace Eigen;

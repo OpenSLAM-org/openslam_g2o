@@ -25,12 +25,12 @@ void BaseUnaryEdge<D, E, VertexXiType>::constructQuadraticForm()
 
   bool istatus = !from->fixed();
   if (istatus) {
-#ifdef _OPENMP
+#ifdef G2O_OPENMP
     from->lockQuadraticForm();
 #endif
     from->b().noalias() -= A.transpose() * omega * _error;
     from->A().noalias() += A.transpose() * omega * A;
-#ifdef _OPENMP
+#ifdef G2O_OPENMP
     from->unlockQuadraticForm();
 #endif
   }
@@ -45,7 +45,7 @@ void BaseUnaryEdge<D, E, VertexXiType>::linearizeOplus()
   if (vi->fixed())
     return;
 
-#ifdef _OPENMP
+#ifdef G2O_OPENMP
   vi->lockQuadraticForm();
 #endif
 
@@ -75,7 +75,7 @@ void BaseUnaryEdge<D, E, VertexXiType>::linearizeOplus()
   } // end dimension
 
   _error = errorBeforeNumeric;
-#ifdef _OPENMP
+#ifdef G2O_OPENMP
   vi->unlockQuadraticForm();
 #endif
 }

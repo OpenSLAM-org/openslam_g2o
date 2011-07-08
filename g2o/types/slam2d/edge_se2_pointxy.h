@@ -52,6 +52,14 @@ namespace g2o {
       
       virtual int measurementDimension() const {return 2;}
 
+      virtual bool setMeasurementFromState(){
+        const VertexSE2* v1 = static_cast<const VertexSE2*>(_vertices[0]);
+        const VertexPointXY* l2 = static_cast<const VertexPointXY*>(_vertices[1]);
+	_measurement = v1->estimate().inverse() * l2->estimate();
+	_inverseMeasurement = - _measurement;
+	return true;
+      }
+
       virtual bool read(std::istream& is);
       virtual bool write(std::ostream& os) const;
 

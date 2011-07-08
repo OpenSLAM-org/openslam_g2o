@@ -21,6 +21,17 @@ SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "postfix applied to release build of l
 SET(CMAKE_RELWITHDEBINFO_POSTFIX "_rd" CACHE STRING "postfix applied to release-with-debug-information libraries")
 SET(CMAKE_MINSIZEREL_POSTFIX "_s" CACHE STRING "postfix applied to minimium-size-build libraries")
 
+# work out the postfix; required where we use OUTPUT_NAME
+IF(CMAKE_BUILD_TYPE MATCHES Release)
+  SET(EXE_POSTFIX)
+ELSEIF(CMAKE_BUILD_TYPE MATCHES Debug)
+  SET(EXE_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+ELSEIF(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
+  SET(EXE_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
+ELSEIF(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
+  SET(EXE_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
+ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
+
 # On the Mac platform, configure the RPATH as per the install, to
 # avoid the problem of loading both the built and installed versions
 # of the shared targets
@@ -70,6 +81,7 @@ ENDIF(CSPARSE_FOUND)
 FIND_PACKAGE(OpenMP)
 SET( G2O_USE_OPENMP OFF CACHE BOOL "Build g2o with OpenMP support (EXPERIMENTAL)")
 IF(OPENMP_FOUND AND G2O_USE_OPENMP)
+  SET (G2O_OPENMP 1)
   SET(g2o_C_FLAGS "${g2o_C_FLAGS} ${OpenMP_C_FLAGS}")
   SET(g2o_CXX_FLAGS "${g2o_CXX_FLAGS} -DEIGEN_DONT_PARALLELIZE ${OpenMP_CXX_FLAGS}")
   MESSAGE(STATUS "Compiling with OpenMP support")
@@ -124,8 +136,6 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 # specifying compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${g2o_CXX_FLAGS}")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${g2o_C_FLAGS}")
-#MESSAGE("CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
-#MESSAGE("CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 
 # Set up the top-level include directories
 SET( G2O_EIGEN3_INCLUDE ${g2o_SOURCE_DIR}/EXTERNAL/eigen3 CACHE PATH "Directory of Eigen3")

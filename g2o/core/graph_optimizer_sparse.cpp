@@ -28,6 +28,7 @@
 #include "batch_stats.h"
 #include "g2o/stuff/timeutil.h"
 #include "g2o/stuff/macros.h"
+#include "g2o/config.h"
 
 namespace g2o{
   using namespace std;
@@ -505,7 +506,7 @@ namespace g2o{
 
   void SparseOptimizer::linearizeSystem()
   {
-#   ifdef _OPENMP
+#   ifdef G2O_OPENMP
 #   pragma omp parallel for default (shared) if (_activeEdges.size() > 50)
 #   endif
     for (size_t k = 0; k < _activeEdges.size(); ++k) {
@@ -604,6 +605,28 @@ namespace g2o{
   {
     for (VertexContainer::iterator it = vlist.begin(); it != vlist.end(); ++it)
       (*it)->pop();
+  }
+
+  void SparseOptimizer::push(HyperGraph::VertexSet& vlist)
+  {
+    for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it) {
+      OptimizableGraph::Vertex* v = dynamic_cast<OptimizableGraph::Vertex*>(*it);
+      if (v)
+	v->push();
+      else 
+	cerr << "FATAL PUSH SET" << endl;
+    }
+  }
+
+  void SparseOptimizer::pop(HyperGraph::VertexSet& vlist)
+  {
+    for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it){
+      OptimizableGraph::Vertex* v = dynamic_cast<OptimizableGraph::Vertex*> (*it);
+      if (v)
+	v->pop();
+      else 
+	cerr << "FATAL POP SET" << endl;
+    }
   }
 
   void SparseOptimizer::discardTop(SparseOptimizer::VertexContainer& vlist)

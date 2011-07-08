@@ -85,6 +85,7 @@ namespace g2o {
     return -1;
   }
 
+
   OptimizableGraph::Edge::Edge() :
     HyperGraph::Edge(),
     _dimension(-1), _level(0), _robustKernel(false), _huberWidth(1.)
@@ -104,6 +105,10 @@ namespace g2o {
   int OptimizableGraph::Edge::measurementDimension() const
   {
     return -1;
+  }
+
+  bool OptimizableGraph::Edge::setMeasurementFromState(){
+    return false;
   }
 
 
@@ -206,6 +211,15 @@ void OptimizableGraph::discardTop(HyperGraph::VertexSet& vset)
     v->discardTop();
   }
 }
+
+  void OptimizableGraph::setFixed(HyperGraph::VertexSet& vset, bool fixed)
+{
+  for (HyperGraph::VertexSet::iterator it=vset.begin(); it!=vset.end(); it++) {
+    OptimizableGraph::Vertex* v = static_cast<OptimizableGraph::Vertex*>(*it);
+    v->setFixed(fixed);
+  }
+}
+
 
 bool OptimizableGraph::load(istream& is, bool createEdges)
 {

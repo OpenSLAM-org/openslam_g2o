@@ -1,7 +1,10 @@
 g2o - General Graph Optimization
 
-g2o is licensed under LGPL version 3, whereas the GUI g2o_viewer is
-licensed under GPL version 3.
+g2o is licensed under LGPL version 3, whereas the following parts are
+licensed under GPL version 3:
+- g2o_viewer
+- g2o_incremental
+
 See the doc folder for the full text of the licenses.
 
 g2o is distributed in the hope that it will be useful,
@@ -44,7 +47,8 @@ are both located in the top-level folder.
 
 Acknowledgments:
 We thank Simon Julier for submitting patches to achieve compatibility
-with Mac OS X.
+with Mac OS X and Michael Eriksen for submitting patches to compile
+with MSVC.
 
 
 Contact information:
