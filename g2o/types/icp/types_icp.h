@@ -110,6 +110,39 @@ namespace g2o {
               0, 0, 1;
       return R0.transpose()*prec*R0;
     }
+    
+    // returns a precision matrix for point-plane
+    Matrix3d prec1(double e)
+    {
+      makeRot1();
+      Matrix3d prec;
+      prec << e, 0, 0,
+              0, e, 0,
+              0, 0, 1;
+      return R1.transpose()*prec*R1;
+    }
+    
+    // return a covariance matrix for plane-plane
+    Matrix3d cov0(double e)
+    {
+    	makeRot0();
+    	Matrix3d cov;
+    	cov  << 1, 0, 0,
+    					0, 1, 0,
+    					0, 0, e;
+    	return R0.transpose()*cov*R0;
+    }
+    
+    // return a covariance matrix for plane-plane
+    Matrix3d cov1(double e)
+    {
+    	makeRot1();
+    	Matrix3d cov;
+    	cov  << 1, 0, 0,
+    					0, 1, 0,
+    					0, 0, e;
+    	return R1.transpose()*cov*R1;
+    }
 
   };
 
