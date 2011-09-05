@@ -26,6 +26,7 @@
 #include "estimate_propagator.h"
 #include "solver.h"
 #include "batch_stats.h"
+#include "hyper_graph_action.h"
 #include "g2o/stuff/timeutil.h"
 #include "g2o/stuff/macros.h"
 #include "g2o/config.h"
@@ -45,6 +46,7 @@ namespace g2o{
     _userLambdaInit = 0;
     _statistics = 0;
     _maxTrialsAfterFailure = 10;
+    _graphActions.resize(AT_NUM_ELEMENTS);
   }
 
   SparseOptimizer::~SparseOptimizer(){
@@ -54,11 +56,19 @@ namespace g2o{
 
   void SparseOptimizer::computeActiveErrors()
   {
+    // call the callbacks in case there is something registered
+    HyperGraphActionSet& actions = _graphActions[AT_COMPUTEACTIVERROR];
+    if (actions.size() > 0) {
+      for (HyperGraphActionSet::iterator it = actions.begin(); it != actions.end(); ++it)
+        (*(*it))(this);
+    }
+
     for (EdgeContainer::const_iterator it = _activeEdges.begin(); it != _activeEdges.end(); it++) {
       OptimizableGraph::Edge* e = *it;
       e->computeError();
-      if (e->robustKernel())
+      if (e->robustKernel()) { 
         e->robustifyError();
+      }
     }
   }
 
@@ -682,6 +692,17 @@ namespace g2o{
       _ivMap.clear();
     }
     return HyperGraph::removeVertex(v);
+  }
+
+  bool SparseOptimizer::addComputeErrorAction(HyperGraphAction* action)
+  {
+    std::pair<HyperGraphActionSet::iterator, bool> insertResult = _graphActions[AT_COMPUTEACTIVERROR].insert(action);
+    return insertResult.second;
+  }
+
+  bool SparseOptimizer::removeComputeErrorAction(HyperGraphAction* action)
+  {
+    return _graphActions[AT_COMPUTEACTIVERROR].erase(action) > 0;
   }
 
 } // end namespace

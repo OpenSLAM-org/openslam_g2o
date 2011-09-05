@@ -36,6 +36,11 @@ namespace g2o {
 
     enum Method{GaussNewton, LevenbergMarquardt};
 
+    enum {
+      AT_COMPUTEACTIVERROR = OptimizableGraph::AT_NUM_ELEMENTS,
+      AT_NUM_ELEMENTS, // keep as last element
+    };
+
     friend class ActivePathCostFunction;
 
     // Attention: _solver & _statistics is own by SparseOptimizer and will be
@@ -210,6 +215,12 @@ namespace g2o {
 
     //! get the number of inner iterations for Levenberg-Marquardt
     int maxTrialsAfterFailure() const { return _maxTrialsAfterFailure;}
+
+    /**** callbacks ****/
+    //! add an action to be executed before the error vectors are computed
+    bool addComputeErrorAction(HyperGraphAction* action);
+    //! remove an action that should no longer be execured before computing the error vectors
+    bool removeComputeErrorAction(HyperGraphAction* action);
 
     protected:
     bool* _forceStopFlag;
