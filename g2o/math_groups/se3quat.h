@@ -17,11 +17,10 @@
 #ifndef __SE3QUAT_H__
 #define __SE3QUAT_H__
 
-#include "g2o/stuff/misc.h"
-#include "g2o/stuff/macros.h"
+#include "se3_ops.h"
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "se3_ops.h"
 
 namespace g2o {
   using namespace Eigen;
@@ -46,8 +45,13 @@ namespace g2o {
       _t.setZero();
     }
 
-    SE3Quat(const Matrix3d& R, const Vector3d t):_r(Quaterniond(R)),_t(t){}
-    SE3Quat(const Quaterniond& q, const Vector3d t):_r(q),_t(t){}
+    SE3Quat(const Matrix3d& R, const Vector3d t):_r(Quaterniond(R)),_t(t){ 
+      normalizeRotation();
+    }
+
+    SE3Quat(const Quaterniond& q, const Vector3d t):_r(q),_t(t){
+      normalizeRotation();
+    }
 
     /**
      * templaized constructor which allows v to be an arbitrary Eigen Vector type, e.g., Vector6d or Map<Vector6d>
@@ -55,16 +59,28 @@ namespace g2o {
     template <typename Derived>
     explicit SE3Quat(const MatrixBase<Derived>& v)
     {
-      assert(v.size() == 6);
-      for (int i=0; i<3; i++){
-	_t[i]=v[i];
-	_r.coeffs()(i)=v[i+3];
+      assert((v.size() == 6 || v.size() == 7) && "Vector dimension does not match");
+      if (v.size() == 6) {
+        for (int i=0; i<3; i++){
+          _t[i]=v[i];
+          _r.coeffs()(i)=v[i+3];
+        }
+        _r.w() = 0.; // recover the positive w
+        if (_r.norm()>1.){
+          _r.normalize();
+        } else {
+          double w2=1.-_r.squaredNorm();
+          _r.w()= (w2<0.) ? 0. : sqrt(w2);
+        }
       }
-      _r.w() = 0.;
-      if (_r.norm()>1.){
-	_r.normalize();
-      } else 
-	_r.w()=sqrt(1.-_r.squaredNorm());
+      else if (v.size() == 7) {
+        int idx = 0;
+        for (int i=0; i<3; ++i, ++idx)
+          _t(i) = v(idx);
+        for (int i=0; i<4; ++i, ++idx)
+          _r.coeffs()(i) = v(idx);
+        normalizeRotation();
+      }
     }
 
     inline const Vector3d& translation() const {return _t;}
@@ -79,14 +95,14 @@ namespace g2o {
       SE3Quat result(*this);
       result._t += _r*tr2._t;
       result._r*=tr2._r;
-      result._r.normalize();
+      result.normalizeRotation();
       return result;
     }
 
     inline SE3Quat& operator *= (const SE3Quat& tr2){
       _t+=_r*tr2._t;
       _r*=tr2._r;
-      _r.normalize();
+      normalizeRotation();
       return *this;
     }
 
@@ -129,7 +145,7 @@ namespace g2o {
     }
 
     inline void fromVector(const Vector7d& v){
-      _r=Quaterniond(v[3], v[4], v[5], v[6]);
+      _r=Quaterniond(v[6], v[3], v[4], v[5]);
       _t=Vector3d(v[0], v[1], v[2]);
     }
 
@@ -147,9 +163,9 @@ namespace g2o {
     inline void fromMinimalVector(const Vector6d& v){
       double w = 1.-v[3]*v[3]-v[4]*v[4]-v[5]*v[5];
       if (w>0){
-	_r=Quaterniond(v[3], v[4], v[5], w);
+	_r=Quaterniond(sqrt(w), v[3], v[4], v[5]);
       } else {
-	_r=Quaterniond(-v[3], -v[4], -v[5], -w);
+	_r=Quaterniond(0, -v[3], -v[4], -v[5]);
       }
       _t=Vector3d(v[0], v[1], v[2]);
     }
@@ -259,6 +275,14 @@ namespace g2o {
 
       return homogenious_matrix;
     }
+
+    void normalizeRotation(){
+	  if (_r.w()<0){
+	  _r.coeffs() *= -1;
+	  }
+	  _r.normalize();
+    }
+
   };
 
 

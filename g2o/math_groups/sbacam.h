@@ -70,7 +70,7 @@ namespace g2o {
 
 
     // set the object pose
-  SBACam(Quaterniond  r_, Vector3d t_) : SE3Quat(r_, t_)
+  SBACam(const Quaterniond&  r_, const Vector3d& t_) : SE3Quat(r_, t_)
     {
       setTransform();
       setProjection();
