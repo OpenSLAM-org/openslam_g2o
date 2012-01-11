@@ -34,8 +34,8 @@
  * http://www.opensource.org/licenses/bsd-license.php
  */
 
-#ifndef FAST_OUTPUT_H
-#define FAST_OUTPUT_H
+#ifndef G2O_FAST_OUTPUT_H
+#define G2O_FAST_OUTPUT_H
 
 #include <cstdio>
 #include <stdint.h>

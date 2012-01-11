@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef TIMEUTIL_H
-#define TIMEUTIL_H
+#ifndef G2O_TIMEUTIL_H
+#define G2O_TIMEUTIL_H
 
 #ifdef _WINDOWS
 #include <time.h>

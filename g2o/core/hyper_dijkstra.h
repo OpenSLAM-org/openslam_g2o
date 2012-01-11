@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef _AIS_GENERAL_DIJKSTRA_HH
-#define _AIS_GENERAL_DIJKSTRA_HH
+#ifndef G2O__AIS_GENERAL_DIJKSTRA_HH
+#define G2O__AIS_GENERAL_DIJKSTRA_HH
 
 #include <map>
 #include <set>

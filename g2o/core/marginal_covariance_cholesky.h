@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef MARGINAL_COVARIANCE_CHOLESKY_H
-#define MARGINAL_COVARIANCE_CHOLESKY_H
+#ifndef G2O_MARGINAL_COVARIANCE_CHOLESKY_H
+#define G2O_MARGINAL_COVARIANCE_CHOLESKY_H
 
 #include "optimizable_graph.h"
 #include "sparse_block_matrix.h"

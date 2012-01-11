@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with g2o.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef DRAW_HELPERS_H
-#define DRAW_HELPERS_H
+#ifndef G2O_DRAW_HELPERS_H
+#define G2O_DRAW_HELPERS_H
 
 #include <qgl.h>
 

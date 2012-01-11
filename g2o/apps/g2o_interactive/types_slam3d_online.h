@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef TYPES_SLAM3D_ONLINE_H
-#define TYPES_SLAM3D_ONLINE_H
+#ifndef G2O_TYPES_SLAM3D_ONLINE_H
+#define G2O_TYPES_SLAM3D_ONLINE_H
 
 #include "g2o/types/slam3d/edge_se3_quat.h"
 

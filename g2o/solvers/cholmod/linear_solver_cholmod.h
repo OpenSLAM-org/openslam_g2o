@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef LINEAR_SOLVER_CHOLMOD
-#define LINEAR_SOLVER_CHOLMOD
+#ifndef G2O_LINEAR_SOLVER_CHOLMOD
+#define G2O_LINEAR_SOLVER_CHOLMOD
 
 #include "g2o/core/linear_solver.h"
 #include "g2o/core/marginal_covariance_cholesky.h"

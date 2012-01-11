@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef G2O_SLAM_INTERFACE_H
-#define G2O_SLAM_INTERFACE_H
+#ifndef G2O_G2O_SLAM_INTERFACE_H
+#define G2O_G2O_SLAM_INTERFACE_H
 
 #include "g2o/core/optimizable_graph.h"
 #include "slam_parser/interface/abstract_slam_interface.h"

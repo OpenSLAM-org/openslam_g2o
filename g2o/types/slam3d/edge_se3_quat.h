@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef _EDGE_SE3_QUAT_
-#define _EDGE_SE3_QUAT_
+#ifndef G2O__EDGE_SE3_QUAT_
+#define G2O__EDGE_SE3_QUAT_
 
 #include "g2o/config.h"
 #include "g2o/core/base_vertex.h"

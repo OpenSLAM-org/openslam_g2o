@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef __SE3QUAT_H__
-#define __SE3QUAT_H__
+#ifndef G2O___SE3QUAT_H__
+#define G2O___SE3QUAT_H__
 
 #include "se3_ops.h"
 

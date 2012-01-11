@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef LINEAR_SOLVER_CHOLMOD_ONLINE
-#define LINEAR_SOLVER_CHOLMOD_ONLINE
+#ifndef G2O_LINEAR_SOLVER_CHOLMOD_ONLINE
+#define G2O_LINEAR_SOLVER_CHOLMOD_ONLINE
 
 #include <camd.h>
 

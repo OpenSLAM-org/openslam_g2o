@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef SOLVER_H
-#define SOLVER_H
+#ifndef G2O_SOLVER_H
+#define G2O_SOLVER_H
 
 #include "hyper_graph.h"
 #include "batch_stats.h"

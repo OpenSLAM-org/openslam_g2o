@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef LINEAR_SOLVERCSPARSE_H
-#define LINEAR_SOLVERCSPARSE_H
+#ifndef G2O_LINEAR_SOLVERCSPARSE_H
+#define G2O_LINEAR_SOLVERCSPARSE_H
 
 #include "csparse_helper.h"
 

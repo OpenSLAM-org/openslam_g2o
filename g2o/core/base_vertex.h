@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef BASE_VERTEX_H
-#define BASE_VERTEX_H
+#ifndef G2O_BASE_VERTEX_H
+#define G2O_BASE_VERTEX_H
 
 #include "optimizable_graph.h"
 #include "creators.h"

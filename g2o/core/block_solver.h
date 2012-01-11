@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef BLOCK_SOLVER_H
-#define BLOCK_SOLVER_H
+#ifndef G2O_BLOCK_SOLVER_H
+#define G2O_BLOCK_SOLVER_H
 #include <Eigen/Core>
 #include "solver.h"
 #include "linear_solver.h"

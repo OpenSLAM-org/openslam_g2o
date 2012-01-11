@@ -22,8 +22,8 @@
  *  Email rk@raikue.net
  ****************************************************************************/
 
-#ifndef FILESYS_TOOLS_H
-#define FILESYS_TOOLS_H
+#ifndef G2O_FILESYS_TOOLS_H
+#define G2O_FILESYS_TOOLS_H
 
 
 /** @addtogroup utils **/

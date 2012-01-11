@@ -25,8 +25,8 @@
 ///   v3 position
 ///
 
-#ifndef _SBACam_
-#define _SBACam_
+#ifndef G2O__SBACam_
+#define G2O__SBACam_
 
 #include "g2o/stuff/misc.h"
 #include "g2o/stuff/macros.h"

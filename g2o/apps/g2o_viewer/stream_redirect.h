@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef STREAM_REDIRECT_H
-#define STREAM_REDIRECT_H
+#ifndef G2O_STREAM_REDIRECT_H
+#define G2O_STREAM_REDIRECT_H
 
 #include <iostream>
 #include <streambuf>

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef EDGE_SE2_POINT_XY_H
-#define EDGE_SE2_POINT_XY_H
+#ifndef G2O_EDGE_SE2_POINT_XY_H
+#define G2O_EDGE_SE2_POINT_XY_H
 
 #include "g2o/config.h"
 #include "vertex_se2.h"

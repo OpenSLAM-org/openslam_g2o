@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef SOLVER_FACTORY_H
-#define SOLVER_FACTORY_H
+#ifndef G2O_SOLVER_FACTORY_H
+#define G2O_SOLVER_FACTORY_H
 
 #include "solver_property.h"
 

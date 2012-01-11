@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef _OS_SPECIFIC_HH_
-#define _OS_SPECIFIC_HH_
+#ifndef G2O__OS_SPECIFIC_HH_
+#define G2O__OS_SPECIFIC_HH_
 
 #ifdef WINDOWS
 #include <stdio.h>

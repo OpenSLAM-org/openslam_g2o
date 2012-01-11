@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef TYPES_SLAM2D_ONLINE_H
-#define TYPES_SLAM2D_ONLINE_H
+#ifndef G2O_TYPES_SLAM2D_ONLINE_H
+#define G2O_TYPES_SLAM2D_ONLINE_H
 
 #include "g2o/types/slam2d/edge_se2.h"
 

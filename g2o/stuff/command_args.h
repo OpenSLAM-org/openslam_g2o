@@ -30,8 +30,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef COMMAND_ARGS_H
-#define COMMAND_ARGS_H
+#ifndef G2O_COMMAND_ARGS_H
+#define G2O_COMMAND_ARGS_H
 
 #include <string>
 #include <vector>

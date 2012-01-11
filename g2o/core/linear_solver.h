@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef LINEAR_SOLVER_H
-#define LINEAR_SOLVER_H
+#ifndef G2O_LINEAR_SOLVER_H
+#define G2O_LINEAR_SOLVER_H
 #include "sparse_block_matrix.h"
 
 namespace g2o {

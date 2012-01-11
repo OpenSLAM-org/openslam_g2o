@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef SIX_DOF_TYPES_EXPMAP
-#define SIX_DOF_TYPES_EXPMAP
+#ifndef G2O_SIX_DOF_TYPES_EXPMAP
+#define G2O_SIX_DOF_TYPES_EXPMAP
 
 #include "g2o/core/base_vertex.h"
 #include "g2o/core/base_binary_edge.h"

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef _AIS_OPTIMIZABLE_GRAPH_HH_
-#define _AIS_OPTIMIZABLE_GRAPH_HH_
+#ifndef G2O__AIS_OPTIMIZABLE_GRAPH_HH_
+#define G2O__AIS_OPTIMIZABLE_GRAPH_HH_
 
 #include <deque>
 #include <set>

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef HYPER_GRAPH_ACTION_H
-#define HYPER_GRAPH_ACTION_H
+#ifndef G2O_HYPER_GRAPH_ACTION_H
+#define G2O_HYPER_GRAPH_ACTION_H
 
 #include "hyper_graph.h"
 

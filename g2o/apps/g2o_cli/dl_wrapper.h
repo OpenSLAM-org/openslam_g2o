@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef DL_WRAPPER_H
-#define DL_WRAPPER_H
+#ifndef G2O_DL_WRAPPER_H
+#define G2O_DL_WRAPPER_H
 
 #include <vector>
 #include <string>

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef G2O_ESTIMATE_PROPAGATOR_H
-#define G2O_ESTIMATE_PROPAGATOR_H
+#ifndef G2O_G2O_ESTIMATE_PROPAGATOR_H
+#define G2O_G2O_ESTIMATE_PROPAGATOR_H
 
 #include "optimizable_graph.h"
 #include "graph_optimizer_sparse.h"

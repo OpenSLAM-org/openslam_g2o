@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef OPENMP_MUTEX
-#define OPENMP_MUTEX
+#ifndef G2O_OPENMP_MUTEX
+#define G2O_OPENMP_MUTEX
 
 #include "g2o/config.h"
 

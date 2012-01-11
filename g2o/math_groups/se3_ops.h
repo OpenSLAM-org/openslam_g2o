@@ -13,8 +13,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef MATH_STUFF
-#define MATH_STUFF
+#ifndef G2O_MATH_STUFF
+#define G2O_MATH_STUFF
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

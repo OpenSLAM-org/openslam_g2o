@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with g2o.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef PRIMITIVES_H
-#define PRIMITIVES_H
+#ifndef G2O_PRIMITIVES_H
+#define G2O_PRIMITIVES_H
 
 /** @addtogroup viewer libviewer **/
 // @{

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef THREE_D_TYPES
-#define THREE_D_TYPES
+#ifndef G2O_THREE_D_TYPES
+#define G2O_THREE_D_TYPES
 
 #include "g2o/config.h"
 #include "g2o/core/base_vertex.h"

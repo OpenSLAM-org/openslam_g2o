@@ -17,8 +17,8 @@
 #include <limits>
 #include <cmath>
 
-#ifndef G2O_MACROS_H
-#define G2O_MACROS_H
+#ifndef G2O_G2O_MACROS_H
+#define G2O_G2O_MACROS_H
 
 #ifndef DEG2RAD
 #define DEG2RAD(x) ((x) * 0.01745329251994329575)

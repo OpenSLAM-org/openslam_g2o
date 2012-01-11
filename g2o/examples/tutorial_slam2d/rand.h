@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef RAND_HH
-#define RAND_HH
+#ifndef G2O_RAND_HH
+#define G2O_RAND_HH
 
 #include <cstdlib>
 #include <cmath>

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef EDGE_SE2_XY_CALIB_H
-#define EDGE_SE2_XY_CALIB_H
+#ifndef G2O_EDGE_SE2_XY_CALIB_H
+#define G2O_EDGE_SE2_XY_CALIB_H
 
 #include "vertex_se2.h"
 #include "vertex_point_xy.h"

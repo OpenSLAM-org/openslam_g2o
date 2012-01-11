@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef GRAPH_OPTIMIZER_SPARSE_ONLINE_H
-#define GRAPH_OPTIMIZER_SPARSE_ONLINE_H
+#ifndef G2O_GRAPH_OPTIMIZER_SPARSE_ONLINE_H
+#define G2O_GRAPH_OPTIMIZER_SPARSE_ONLINE_H
 
 #include "g2o/core/graph_optimizer_sparse.h"
 

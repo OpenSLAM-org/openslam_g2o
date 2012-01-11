@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef GRAPH_OPTIMIZER_SPARSE_INCREMENTAL_H
-#define GRAPH_OPTIMIZER_SPARSE_INCREMENTAL_H
+#ifndef G2O_GRAPH_OPTIMIZER_SPARSE_INCREMENTAL_H
+#define G2O_GRAPH_OPTIMIZER_SPARSE_INCREMENTAL_H
 
 #include "g2o/core/sparse_block_matrix.h"
 #include "g2o/apps/g2o_interactive/graph_optimizer_sparse_online.h"

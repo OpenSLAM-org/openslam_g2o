@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#ifndef SEVEN_DOF_EXPMAP_TYPES
-#define SEVEN_DOF_EXPMAP_TYPES
+#ifndef G2O_SEVEN_DOF_EXPMAP_TYPES
+#define G2O_SEVEN_DOF_EXPMAP_TYPES
 
 #include "g2o/core/base_vertex.h"
 #include "g2o/core/base_binary_edge.h"

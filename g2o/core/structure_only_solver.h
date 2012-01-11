@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef STRUCTURE_ONLY_SOLVER_H
-#define STRUCTURE_ONLY_SOLVER_H
+#ifndef G2O_STRUCTURE_ONLY_SOLVER_H
+#define G2O_STRUCTURE_ONLY_SOLVER_H
 
 #include "hyper_graph.h"
 #include "base_vertex.h"

@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with g2o.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef GUI_HYPER_GRAPH_ACTION_H
-#define GUI_HYPER_GRAPH_ACTION_H
+#ifndef G2O_GUI_HYPER_GRAPH_ACTION_H
+#define G2O_GUI_HYPER_GRAPH_ACTION_H
 
 #include "g2o/core/hyper_graph_action.h"
 

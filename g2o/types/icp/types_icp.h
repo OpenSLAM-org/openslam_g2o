@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef TYPES_ICP
-#define TYPES_ICP
+#ifndef G2O_TYPES_ICP
+#define G2O_TYPES_ICP
 
 #define GICP_ANALYTIC_JACOBIANS
 //#define SCAM_ANALYTIC_JACOBIANS

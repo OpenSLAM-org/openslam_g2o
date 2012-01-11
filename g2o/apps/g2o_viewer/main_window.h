@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with g2o.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef MAIN_WINDOW_H
-#define MAIN_WINDOW_H
+#ifndef G2O_MAIN_WINDOW_H
+#define G2O_MAIN_WINDOW_H
 
 #include "ui_base_main_window.h"
 

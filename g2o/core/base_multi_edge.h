@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef BASE_MULTI_EDGE_H
-#define BASE_MULTI_EDGE_H
+#ifndef G2O_BASE_MULTI_EDGE_H
+#define G2O_BASE_MULTI_EDGE_H
 
 #include <iostream>
 #include <iomanip>

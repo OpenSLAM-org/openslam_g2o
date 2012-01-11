@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef _BATCH_STATS_H_
-#define _BATCH_STATS_H_
+#ifndef G2O__BATCH_STATS_H_
+#define G2O__BATCH_STATS_H_
 
 #include <iostream>
 

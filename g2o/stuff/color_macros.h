@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef COLOR_MACROS_H
-#define COLOR_MACROS_H
+#ifndef G2O_COLOR_MACROS_H
+#define G2O_COLOR_MACROS_H
 
 // font attributes
 #define FT_BOLD      "\033[1m"

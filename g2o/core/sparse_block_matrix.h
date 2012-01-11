@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef __SPARSE_BLOCK_MATRIX__
-#define __SPARSE_BLOCK_MATRIX__
+#ifndef G2O___SPARSE_BLOCK_MATRIX__
+#define G2O___SPARSE_BLOCK_MATRIX__
 
 #include <map>
 #include <vector>

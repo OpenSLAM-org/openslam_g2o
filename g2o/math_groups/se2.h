@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef __SE2_H__
-#define __SE2_H__
+#ifndef G2O___SE2_H__
+#define G2O___SE2_H__
 
 #include "g2o/stuff/misc.h"
 #include "g2o/stuff/macros.h"

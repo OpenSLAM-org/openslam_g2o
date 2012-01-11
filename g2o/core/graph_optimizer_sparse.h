@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef _GRAPH_OPTIMIZER_CHOL_H_
-#define _GRAPH_OPTIMIZER_CHOL_H_
+#ifndef G2O__GRAPH_OPTIMIZER_CHOL_H_
+#define G2O__GRAPH_OPTIMIZER_CHOL_H_
 
 #include "optimizable_graph.h"
 

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef STRING_TOOLS_H
-#define STRING_TOOLS_H
+#ifndef G2O_STRING_TOOLS_H
+#define G2O_STRING_TOOLS_H
 
 #include <string>
 #include <sstream>

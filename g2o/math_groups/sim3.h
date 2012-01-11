@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef SIM_3
-#define SIM_3
+#ifndef G2O_SIM_3
+#define G2O_SIM_3
 
 #include "se3_ops.h"
 #include <Eigen/Geometry>
