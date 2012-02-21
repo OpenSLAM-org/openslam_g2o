@@ -21,6 +21,7 @@
 #include "qglviewer.h"
 #include <cstdlib>
 #include <cmath>
+#include <GL/glu.h>
 
 namespace g2o {
 

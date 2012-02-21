@@ -19,6 +19,7 @@
 #include "draw_helpers.h"
 
 #include <cmath>
+#include <GL/glu.h>
 
 namespace g2o {
 
