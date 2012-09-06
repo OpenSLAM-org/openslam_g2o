@@ -321,3 +321,26 @@ void MainWindow::on_actionDefault_Background_triggered(bool)
   viewer->setBackgroundColor(QColor::fromRgb(51, 51, 51));
   viewer->updateGL();
 }
+
+void MainWindow::on_actionSave_Screenshot_triggered(bool)
+{
+  QString selectedFilter;
+  QString filename = QFileDialog::getSaveFileName(this, "Save screen to a file", "viewer.png",
+      "PNG files (*.png);;JPG files (*.jpg);;EPS files (*.eps)", &selectedFilter);
+
+  if (! filename.isNull()) {
+    // extract the file format from the filter options
+    int spacePos = selectedFilter.indexOf(' ');
+    assert(spacePos > 0 && "extracting the image format failed");
+    QString format = selectedFilter.left(spacePos);
+    // setting up the snapshot and save to file
+    if (format == "JPG") {
+      viewer->setSnapshotQuality(90);
+    } else {
+      viewer->setSnapshotQuality(-1);
+    }
+    viewer->setSnapshotFormat(format);
+    viewer->saveSnapshot(filename);
+    cerr << "saved snapshot " << filename.toStdString() << "(" << format.toStdString() << ")" << endl;
+  }
+}
