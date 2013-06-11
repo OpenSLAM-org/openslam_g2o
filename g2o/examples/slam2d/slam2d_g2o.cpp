@@ -17,6 +17,7 @@
 // along with g2o.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
+#include <unistd.h>
 
 #include "main_window.h"
 

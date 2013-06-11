@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unistd.h>
 
 #include "main_window.h"
 #include "stream_redirect.h"
