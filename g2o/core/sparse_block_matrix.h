@@ -1,36 +1,49 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef G2O___SPARSE_BLOCK_MATRIX__
-#define G2O___SPARSE_BLOCK_MATRIX__
+#ifndef G2O_SPARSE_BLOCK_MATRIX_
+#define G2O_SPARSE_BLOCK_MATRIX_
 
 #include <map>
 #include <vector>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <cassert>
 #include <Eigen/Core>
 
+#include "sparse_block_matrix_ccs.h"
 #include "matrix_structure.h"
+#include "matrix_operations.h"
 #include "g2o/config.h"
 
 namespace g2o {
   using namespace Eigen;
 /**
- * \brief Sparse matrix which using blocks
+ * \brief Sparse matrix which uses blocks
  *
  * Template class that specifies a sparse block matrix.  A block
  * matrix is a sparse matrix made of dense blocks.  These blocks
@@ -40,7 +53,7 @@ namespace g2o {
  * Eigen::Matrix structure, thus they can be statically or dynamically
  * allocated. For efficiency reasons it is convenient to allocate them
  * statically, when possible. A static block matrix has all blocks of
- * the same size, and the size of rhe block is specified by the
+ * the same size, and the size of the block is specified by the
  * template argument.  If this is not the case, and you have different
  * block sizes than you have to use a dynamic-block matrix (default
  * template argument).  
@@ -129,6 +142,12 @@ class SparseBlockMatrix {
     //! dest = (*this) *  src
     void multiply(double*& dest, const double* src) const;
 
+    /**
+     * compute dest = (*this) *  src
+     * However, assuming that this is a symmetric matrix where only the upper triangle is stored
+     */
+    void multiplySymmetricUpperTriangle(double*& dest, const double* src) const;
+
     //! dest = M * (*this)
     void rightMultiply(double*& dest, const double* src) const;
 
@@ -172,6 +191,24 @@ class SparseBlockMatrix {
      * @param upperTriangle does this matrix store only the upper triangular blocks
      */
     bool writeOctave(const char* filename, bool upperTriangle = true) const;
+
+    /**
+     * copy into CCS structure
+     * @return number of processed blocks, -1 on error
+     */
+    int fillSparseBlockMatrixCCS(SparseBlockMatrixCCS<MatrixType>& blockCCS) const;
+
+    /**
+     * copy as transposed into a CCS structure
+     * @return number of processed blocks, -1 on error
+     */
+    int fillSparseBlockMatrixCCSTransposed(SparseBlockMatrixCCS<MatrixType>& blockCCS) const;
+
+    /**
+     * take over the memory and matrix pattern from a hash matrix.
+     * The structure of the hash matrix will be cleared.
+     */
+    void takePatternFromHash(SparseBlockMatrixHashMap<MatrixType>& hashMatrix);
 
   protected:
     std::vector<int> _rowBlockIndices; ///< vector of the indices of the blocks along the rows.

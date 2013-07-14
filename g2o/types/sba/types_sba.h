@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 Kurt Konolige
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef G2O_SBA_TYPES
 #define G2O_SBA_TYPES
@@ -20,9 +30,11 @@
 #include "g2o/core/base_vertex.h"
 #include "g2o/core/base_binary_edge.h"
 #include "g2o/core/base_multi_edge.h"
-#include "g2o/math_groups/sbacam.h"
+#include "sbacam.h"
 #include <Eigen/Geometry>
 #include <iostream>
+
+#include "g2o_types_sba_api.h"
 
 namespace g2o {
 
@@ -32,7 +44,7 @@ namespace g2o {
  * \brief Vertex encoding the intrinsics of the camera fx, fy, cx, xy, baseline;
  */
 
-class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
+class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -40,11 +52,11 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
     virtual bool read(std::istream& is);
     virtual bool write(std::ostream& os) const;
       
-    virtual void setToOrigin() {
+    virtual void setToOriginImpl() {
       _estimate << 1., 1., 0.5, 0.5, 0.1;
     }
       
-    virtual void oplus(double* update)
+    virtual void oplusImpl(const double* update)
     {
       _estimate.head<4>() += Vector4d(update);
     }
@@ -58,70 +70,95 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
  */
 
 
-  class VertexCam : public BaseVertex<6, SBACam>
+  class G2O_TYPES_SBA_API VertexCam : public BaseVertex<6, SBACam>
 {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     VertexCam();
-      
+
     virtual bool read(std::istream& is);
     virtual bool write(std::ostream& os) const;
 
-    virtual void setToOrigin() {
+    virtual void setToOriginImpl() {
       _estimate = SBACam();
     }
-      
-    virtual void oplus(double* update)
+    
+    virtual void setEstimate(const SBACam& cam){
+      BaseVertex<6, SBACam>::setEstimate(cam);
+      _estimate.setTransform();
+      _estimate.setProjection();
+      _estimate.setDr();
+    }
+    
+    virtual void oplusImpl(const double* update)
     {
-      /* if (_intrinsics){ */
-      /* 	_estimate.setKcam(_intrinsics->estimate()[0], */
-      /* 			  _intrinsics->estimate()[1], */
-      /* 			  _intrinsics->estimate()[2], */
-      /* 			  _intrinsics->estimate()[3], */
-      /* 			  _intrinsics->estimate()[4]); */
-      /* } */
-      Vector6d v;
-      for (int i=0; i<6; i++) 
-	v[i]=update[i];
+      Map<const Vector6d> v(update);
       _estimate.update(v);
+      _estimate.setTransform();
+      _estimate.setProjection();
+      _estimate.setDr();
+    }
+    
+
+    virtual bool setEstimateDataImpl(const double* est){
+      Map <const Vector7d> v(est);
+      _estimate.fromVector(v);
+      return true;
     }
 
-    VertexIntrinsics* _intrinsics;
+    virtual bool getEstimateData(double* est) const{
+      Map <Vector7d> v(est);
+      v = estimate().toVector();
+      return true;
+    }
+
+    virtual int estimateDimension() const {
+      return 7;
+    }
+
+    virtual bool setMinimalEstimateDataImpl(const double* est){
+      Map<const Vector6d> v(est);
+      _estimate.fromMinimalVector(v);
+      return true;
+    }
+
+    virtual bool getMinimalEstimateData(double* est) const{
+      Map<Vector6d> v(est);
+      v = _estimate.toMinimalVector();
+      return true;
+    }
+
+    virtual int minimalEstimateDimension() const {
+      return 6;
+    }
  };
 
 /**
  * \brief Point vertex, XYZ
  */
- class VertexPointXYZ : public BaseVertex<3, Vector3d>
+ class G2O_TYPES_SBA_API VertexSBAPointXYZ : public BaseVertex<3, Vector3d>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW    
-    VertexPointXYZ();
+    VertexSBAPointXYZ();
     virtual bool read(std::istream& is);
     virtual bool write(std::ostream& os) const;
 
-    virtual void setToOrigin() {
+    virtual void setToOriginImpl() {
       _estimate.fill(0.);
     }
 
-    virtual void oplus(double* update_)
+    virtual void oplusImpl(const double* update)
     {
-
-      Vector3d update;
-      for (int i=0; i<3; i++)
-        update[i]=update_[i];
-
-      _estimate += update;
+      Map<const Vector3d> v(update);
+      _estimate += v;
     }
-
-
- protected:
 };
 
 
 // monocular projection
 // first two args are the measurement type, second two the connection classes
- class EdgeProjectP2MC : public  BaseBinaryEdge<2, Vector2d, VertexPointXYZ, VertexCam> 
+ class G2O_TYPES_SBA_API EdgeProjectP2MC : public  BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexCam> 
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -133,7 +170,7 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
     void computeError()
     {
       // from <Point> to <Cam>
-      const VertexPointXYZ *point = static_cast<const VertexPointXYZ*>(_vertices[0]);
+      const VertexSBAPointXYZ *point = static_cast<const VertexSBAPointXYZ*>(_vertices[0]);
       const VertexCam *cam = static_cast<const VertexCam*>(_vertices[1]);
 
       // calculate the projection
@@ -156,12 +193,11 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
 
     // jacobian
     virtual void linearizeOplus();
-
 };
 
 // stereo projection
 // first two args are the measurement type, second two the connection classes
- class EdgeProjectP2SC : public  BaseBinaryEdge<3, Vector3d, VertexPointXYZ, VertexCam>
+ class G2O_TYPES_SBA_API EdgeProjectP2SC : public  BaseBinaryEdge<3, Vector3d, VertexSBAPointXYZ, VertexCam>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -173,7 +209,7 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
     void computeError()
     {
       // from <Point> to <Cam>
-      const VertexPointXYZ *point = static_cast<const VertexPointXYZ*>(_vertices[0]);
+      const VertexSBAPointXYZ *point = static_cast<const VertexSBAPointXYZ*>(_vertices[0]);
       VertexCam *cam = static_cast<VertexCam*>(_vertices[1]);
 
       // calculate the projection
@@ -181,10 +217,11 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
       Vector4d pt;
       pt.head<3>() = point->estimate();
       pt(3) = 1.0;
-      SBACam &nd = cam->estimate();
-      nd.setTransform();
-      nd.setProjection();
-      nd.setDr();
+      const SBACam& nd = cam->estimate();
+      // these should be already ok
+      /* nd.setTransform(); */
+      /* nd.setProjection(); */
+      /* nd.setDr(); */
 
       Vector3d p1 = nd.w2i * pt; 
       Vector3d p2 = nd.w2n * pt; 
@@ -216,7 +253,7 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
 
 // monocular projection with parameter calibration
 // first two args are the measurement type, second two the connection classes
- class EdgeProjectP2MC_Intrinsics : public  BaseMultiEdge<2, Vector2d> 
+ class G2O_TYPES_SBA_API EdgeProjectP2MC_Intrinsics : public  BaseMultiEdge<2, Vector2d> 
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -228,7 +265,7 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
     void computeError()
     {
       // from <Point> to <Cam>, the intrinsics in KCam should be already set!
-      const VertexPointXYZ *point = static_cast<const VertexPointXYZ*>(_vertices[0]);
+      const VertexSBAPointXYZ *point = static_cast<const VertexSBAPointXYZ*>(_vertices[0]);
       VertexCam *cam = static_cast<VertexCam*>(_vertices[1]);
       // calculate the projection
       const Vector3d &pt = point->estimate();
@@ -247,10 +284,10 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
 /**
  * \brief 3D edge between two SBAcam
  */
- class EdgeSBACam : public BaseBinaryEdge<6, SE3Quat, VertexCam, VertexCam>
+ class G2O_TYPES_SBA_API EdgeSBACam : public BaseBinaryEdge<6, SE3Quat, VertexCam, VertexCam>
 {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     EdgeSBACam();
     virtual bool read(std::istream& is);
     virtual bool write(std::ostream& os) const;
@@ -266,16 +303,41 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
       _error[4]=delta.rotation().y();
       _error[5]=delta.rotation().z();
     }
+    
+    virtual void setMeasurement(const SE3Quat& meas){
+      _measurement=meas;
+      _inverseMeasurement=meas.inverse();
+    }
 
     virtual double initialEstimatePossible(const OptimizableGraph::VertexSet& , OptimizableGraph::Vertex* ) { return 1.;}
     virtual void initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to);
+
+    virtual bool setMeasurementData(const double* d){
+      Map<const Vector7d> v(d);
+      _measurement.fromVector(v);
+      _inverseMeasurement = _measurement.inverse();
+      return true;
+    }
+
+    virtual bool getMeasurementData(double* d) const{
+      Map<Vector7d> v(d);
+      v = _measurement.toVector();
+      return true;
+    }
+
+    virtual int measurementDimension() const {return 7;}
+
+    virtual bool setMeasurementFromState();
+    
+  protected:
+    SE3Quat _inverseMeasurement;
 };
 
 
 /**
  * \brief edge between two SBAcam that specifies the distance between them
  */
- class EdgeSBAScale : public BaseBinaryEdge<1, double, VertexCam, VertexCam>
+ class G2O_TYPES_SBA_API EdgeSBAScale : public BaseBinaryEdge<1, double, VertexCam, VertexCam>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -288,6 +350,9 @@ class VertexIntrinsics : public BaseVertex<4, Matrix<double, 5, 1> >
       const VertexCam* v2 = dynamic_cast<const VertexCam*>(_vertices[1]);
       Vector3d dt=v2->estimate().translation()-v1->estimate().translation();
       _error[0] = _measurement - dt.norm();
+    }
+    virtual void setMeasurement(const double& m){
+      _measurement = m;
     }
     virtual double initialEstimatePossible(const OptimizableGraph::VertexSet& , OptimizableGraph::Vertex* ) { return 1.;}
     virtual void initialEstimate(const OptimizableGraph::VertexSet& from_, OptimizableGraph::Vertex* to_);

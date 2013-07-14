@@ -19,7 +19,7 @@
 #include "main_window.h"
 //#include "moc_main_window.cpp"
 
-#include "g2o/core/graph_optimizer_sparse.h"
+#include "g2o/core/sparse_optimizer.h"
 #include "g2o/core/estimate_propagator.h"
 
 #include <QFileDialog>
@@ -80,11 +80,11 @@ void MainWindow::on_btnOptimize_clicked()
   viewer->graph->initializeOptimization();
 
   if (rbGauss->isChecked())
-    viewer->graph->setMethod(g2o::SparseOptimizer::GaussNewton);
+    viewer->graph->setAlgorithm(solverGaussNewton);
   else if (rbLevenberg->isChecked())
-    viewer->graph->setMethod(g2o::SparseOptimizer::LevenbergMarquardt);
+    viewer->graph->setAlgorithm(solverLevenberg);
   else
-    viewer->graph->setMethod(g2o::SparseOptimizer::GaussNewton);
+    viewer->graph->setAlgorithm(solverGaussNewton);
 
   int maxIterations = spIterations->value();
   int iter = viewer->graph->optimize(maxIterations);
@@ -93,7 +93,8 @@ void MainWindow::on_btnOptimize_clicked()
   }
 
   if (cbCovariances->isChecked()) {
-    viewer->graph->solver()->computeMarginals();
+    // TODO
+    //viewer->graph->solver()->computeMarginals();
   }
   viewer->drawCovariance = cbCovariances->isChecked();
 

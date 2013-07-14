@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "marginal_covariance_cholesky.h"
 
@@ -56,66 +66,6 @@ void MarginalCovarianceCholesky::setCholeskyFactor(int n, int* Lp, int* Li, doub
     assert(r == _Ai[sc] && "Error in CCS storage of L");
     _diag[r] = 1.0 / _Ax[sc];
   }
-}
-
-void MarginalCovarianceCholesky::computeCovariance(const std::vector<OptimizableGraph::Vertex*>& vertices)
-{
-  int maxDimension = -1;
-  _map.clear();
-  vector<MatrixElem> elemsToCompute;
-  for (size_t i = 0; i < vertices.size(); ++i) {
-    OptimizableGraph::Vertex* v = vertices[i];
-    int vdim = v->dimension();
-    int base = v->colInHessian();
-    maxDimension = std::max(vdim, maxDimension);
-    for (int rr = 0; rr < vdim; ++rr)
-      for (int cc = rr; cc < vdim; ++cc) {
-        int r = _perm ? _perm[rr + base] : rr + base; // apply permutation
-        int c = _perm ? _perm[cc + base] : cc + base;
-        if (r > c)
-          swap(r, c);
-        elemsToCompute.push_back(MatrixElem(r, c));
-      }
-  }
-
-  // sort the elems to reduce the number of recursive calls
-  sort(elemsToCompute.begin(), elemsToCompute.end());
-
-  // compute the inverse elements we need
-  for (size_t i = 0; i < elemsToCompute.size(); ++i) {
-    const MatrixElem& me = elemsToCompute[i];
-    computeEntry(me.r, me.c);
-  }
-
-#ifdef _MSC_VER
-  double* cov = new double[maxDimension * maxDimension];
-#else // allocation from the stack
-  double cov[maxDimension * maxDimension];
-#endif
-
-  // set the marginal covariance for the vertices
-  for (size_t i = 0; i < vertices.size(); ++i) {
-    OptimizableGraph::Vertex* v = vertices[i];
-    int vdim = v->dimension();
-    int base = v->colInHessian();
-    for (int rr = 0; rr < vdim; ++rr)
-      for (int cc = rr; cc < vdim; ++cc) {
-        int r = _perm ? _perm[rr + base] : rr + base; // apply permutation
-        int c = _perm ? _perm[cc + base] : cc + base;
-        if (r > c)
-          swap(r, c);
-        int idx = computeIndex(r, c);
-        LookupMap::const_iterator foundIt = _map.find(idx);
-        assert(foundIt != _map.end());
-        cov[rr*vdim + cc] = foundIt->second;
-        if (rr != cc)
-          cov[cc*vdim + rr] = foundIt->second;
-      }
-    v->setUncertainty(cov);
-  }
-#ifdef _MSC_VER
-  delete[] cov;
-#endif
 }
 
 double MarginalCovarianceCholesky::computeEntry(int r, int c)
@@ -201,32 +151,32 @@ void MarginalCovarianceCholesky::computeCovariance(double** covBlocks, const std
 }
 
 
-  void MarginalCovarianceCholesky::computeCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<int>& rowBlockIndices, const std::vector< std::pair<int, int> >& blockIndices)
+void MarginalCovarianceCholesky::computeCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<int>& rowBlockIndices, const std::vector< std::pair<int, int> >& blockIndices)
 {
   // allocate the sparse
   spinv = SparseBlockMatrix<MatrixXd>(&rowBlockIndices[0], 
-				      &rowBlockIndices[0], 
-				      rowBlockIndices.size(),
-				      rowBlockIndices.size(), true);
+              &rowBlockIndices[0], 
+              rowBlockIndices.size(),
+              rowBlockIndices.size(), true);
   _map.clear();
   vector<MatrixElem> elemsToCompute;
   for (size_t i = 0; i < blockIndices.size(); ++i) {
     int blockRow=blockIndices[i].first;    
     int blockCol=blockIndices[i].second;
-    assert (blockRow>=0);
-    assert (blockRow < (int)rowBlockIndices.size());
-    assert (blockCol>=0);
-    assert (blockCol < (int)rowBlockIndices.size());
+    assert(blockRow>=0);
+    assert(blockRow < (int)rowBlockIndices.size());
+    assert(blockCol>=0);
+    assert(blockCol < (int)rowBlockIndices.size());
 
     int rowBase=spinv.rowBaseOfBlock(blockRow);
     int colBase=spinv.colBaseOfBlock(blockCol);
     
     MatrixXd *block=spinv.block(blockRow, blockCol, true);
     assert(block);
-    for (int iRow=0; iRow<block->rows(); iRow++)
-      for (int iCol=0; iCol<block->cols(); iCol++){
-	int rr=rowBase+iRow;
-	int cc=colBase+iCol;
+    for (int iRow=0; iRow<block->rows(); ++iRow)
+      for (int iCol=0; iCol<block->cols(); ++iCol){
+  int rr=rowBase+iRow;
+  int cc=colBase+iCol;
         int r = _perm ? _perm[rr] : rr; // apply permutation
         int c = _perm ? _perm[cc] : cc;
         if (r > c)
@@ -253,10 +203,10 @@ void MarginalCovarianceCholesky::computeCovariance(double** covBlocks, const std
     
     MatrixXd *block=spinv.block(blockRow, blockCol);
     assert(block);
-    for (int iRow=0; iRow<block->rows(); iRow++)
-      for (int iCol=0; iCol<block->cols(); iCol++){
-	int rr=rowBase+iRow;
-	int cc=colBase+iCol;
+    for (int iRow=0; iRow<block->rows(); ++iRow)
+      for (int iCol=0; iCol<block->cols(); ++iCol){
+  int rr=rowBase+iRow;
+  int cc=colBase+iCol;
         int r = _perm ? _perm[rr] : rr; // apply permutation
         int c = _perm ? _perm[cc] : cc;
         if (r > c)
@@ -264,7 +214,7 @@ void MarginalCovarianceCholesky::computeCovariance(double** covBlocks, const std
         int idx = computeIndex(r, c);
         LookupMap::const_iterator foundIt = _map.find(idx);
         assert(foundIt != _map.end());
-	(*block)(iRow, iCol) = foundIt->second;
+  (*block)(iRow, iCol) = foundIt->second;
       }
   }
 }

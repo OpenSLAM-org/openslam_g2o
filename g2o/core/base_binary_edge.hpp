@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, H. Strasdat, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 template <int D, typename E, typename VertexXiType, typename VertexXjType>
 OptimizableGraph::Vertex* BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::createFrom(){
@@ -26,6 +36,22 @@ OptimizableGraph::Vertex* BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::crea
 
 
 template <int D, typename E, typename VertexXiType, typename VertexXjType>
+void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::resize(size_t size)
+{
+  if (size != 2) {
+    std::cerr << "WARNING, attempting to resize binary edge " << BaseEdge<D, E>::id() << " to " << size << std::endl;
+  }
+  BaseEdge<D, E>::resize(size);
+}
+
+template <int D, typename E, typename VertexXiType, typename VertexXjType>
+bool BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::allVerticesFixed() const
+{
+  return (static_cast<const VertexXiType*> (_vertices[0])->fixed() &&
+          static_cast<const VertexXjType*> (_vertices[1])->fixed());
+}
+
+template <int D, typename E, typename VertexXiType, typename VertexXjType>
 void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::constructQuadraticForm()
 {
   VertexXiType* from = static_cast<VertexXiType*>(_vertices[0]);
@@ -35,7 +61,6 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::constructQuadraticForm()
   const JacobianXiOplusType& A = jacobianOplusXi();
   const JacobianXjOplusType& B = jacobianOplusXj();
 
-  const InformationType& omega = _information;
 
   bool fromNotFixed = !(from->fixed());
   bool toNotFixed = !(to->fixed());
@@ -45,27 +70,61 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::constructQuadraticForm()
     from->lockQuadraticForm();
     to->lockQuadraticForm();
 #endif
+    const InformationType& omega = _information;
     Matrix<double, D, 1> omega_r = - omega * _error;
-    if (fromNotFixed) {
-      Matrix<double, VertexXiType::Dimension, D> AtO = A.transpose() * omega;
-      from->b().noalias() += A.transpose() * omega_r;
-      from->A().noalias() += AtO*A;
-      if (toNotFixed ) {
-        if (_hessianRowMajor) // we have to write to the block as transposed
-          _hessianTransposed.noalias() += B.transpose() * AtO.transpose();
-        else
-          _hessian.noalias() += AtO * B;
+    if (this->robustKernel() == 0) {
+      if (fromNotFixed) {
+        Matrix<double, VertexXiType::Dimension, D> AtO = A.transpose() * omega;
+        from->b().noalias() += A.transpose() * omega_r;
+        from->A().noalias() += AtO*A;
+        if (toNotFixed ) {
+          if (_hessianRowMajor) // we have to write to the block as transposed
+            _hessianTransposed.noalias() += B.transpose() * AtO.transpose();
+          else
+            _hessian.noalias() += AtO * B;
+        }
+      } 
+      if (toNotFixed) {
+        to->b().noalias() += B.transpose() * omega_r;
+        to->A().noalias() += B.transpose() * omega * B;
       }
-    } 
-    if (toNotFixed ) {
-      to->b().noalias() += B.transpose() * omega_r;
-      to->A().noalias() += B.transpose() * omega * B;
+    } else { // robust (weighted) error according to some kernel
+      double error = this->chi2();
+      Eigen::Vector3d rho;
+      this->robustKernel()->robustify(error, rho);
+      InformationType weightedOmega = this->robustInformation(rho);
+      //std::cout << PVAR(rho.transpose()) << std::endl;
+      //std::cout << PVAR(weightedOmega) << std::endl;
+
+      omega_r *= rho[1];
+      if (fromNotFixed) {
+        from->b().noalias() += A.transpose() * omega_r;
+        from->A().noalias() += A.transpose() * weightedOmega * A;
+        if (toNotFixed ) {
+          if (_hessianRowMajor) // we have to write to the block as transposed
+            _hessianTransposed.noalias() += B.transpose() * weightedOmega * A;
+          else
+            _hessian.noalias() += A.transpose() * weightedOmega * B;
+        }
+      } 
+      if (toNotFixed) {
+        to->b().noalias() += B.transpose() * omega_r;
+        to->A().noalias() += B.transpose() * weightedOmega * B;
+      }
     }
 #ifdef G2O_OPENMP
     to->unlockQuadraticForm();
     from->unlockQuadraticForm();
 #endif
   }
+}
+
+template <int D, typename E, typename VertexXiType, typename VertexXjType>
+void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::linearizeOplus(JacobianWorkspace& jacobianWorkspace)
+{
+  new (&_jacobianOplusXi) JacobianXiOplusType(jacobianWorkspace.workspaceForVertex(0), D, Di);
+  new (&_jacobianOplusXj) JacobianXjOplusType(jacobianWorkspace.workspaceForVertex(1), D, Dj);
+  linearizeOplus();
 }
 
 template <int D, typename E, typename VertexXiType, typename VertexXjType>

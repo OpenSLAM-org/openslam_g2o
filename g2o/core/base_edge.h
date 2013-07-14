@@ -1,24 +1,36 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, H. Strasdat, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef G2O_BASE_EDGE_H
 #define G2O_BASE_EDGE_H
 
 #include <iostream>
 #include <limits>
+
+#include <Eigen/Core>
 
 #include "optimizable_graph.h"
 
@@ -48,13 +60,6 @@ namespace g2o {
         return _error.dot(information()*_error);
       }
 
-      virtual void robustifyError()
-      {
-        double nrm = sqrt(_error.dot(information()*_error));
-        double w = sqrtOfHuberByNrm(nrm,_huberWidth);
-        _error *= w;
-      }
-
       virtual const double* errorData() const { return _error.data();}
       virtual double* errorData() { return _error.data();}
       const ErrorVector& error() const { return _error;}
@@ -70,31 +75,31 @@ namespace g2o {
 
       //! accessor functions for the measurement represented by the edge
       const Measurement& measurement() const { return _measurement;}
-      Measurement& measurement() { return _measurement;}
       virtual void setMeasurement(const Measurement& m) { _measurement = m;}
 
       virtual int rank() const {return _dimension;}
 
-      /**
-       * accessor functions for the inverse measurement, you may use this to cache the
-       * inverse measurement in case you need it to compute, for example, the error vector.
-       */
-      const Measurement& inverseMeasurement() const { return _inverseMeasurement;}
-      Measurement& inverseMeasurement() { return _inverseMeasurement;}
-      virtual void setInverseMeasurement(const Measurement& im) { _inverseMeasurement = im;}
-
-      virtual void initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to)
+      virtual void initialEstimate(const OptimizableGraph::VertexSet&, OptimizableGraph::Vertex*)
       {
-        (void) from; (void) to;
-        std::cerr << __PRETTY_FUNCTION__ << " is not implemented, please give implementation in your derived class" << std::endl;
+        std::cerr << "inititialEstimate() is not implemented, please give implementation in your derived class" << std::endl;
       }
 
     protected:
 
       Measurement _measurement;
-      Measurement _inverseMeasurement;
       InformationType _information;
       ErrorVector _error;
+
+      /**
+       * calculate the robust information matrix by updating the information matrix of the error
+       */
+      InformationType robustInformation(const Eigen::Vector3d& rho)
+      {
+        InformationType result = rho[1] * _information;
+        //ErrorVector weightedErrror = _information * _error;
+        //result.noalias() += 2 * rho[2] * (weightedErrror * weightedErrror.transpose());
+        return result;
+      }
 
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW

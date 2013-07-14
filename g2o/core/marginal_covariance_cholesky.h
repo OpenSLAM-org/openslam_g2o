@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef G2O_MARGINAL_COVARIANCE_CHOLESKY_H
 #define G2O_MARGINAL_COVARIANCE_CHOLESKY_H
@@ -29,12 +39,14 @@
 #include <tr1/unordered_map>
 #endif
 
+#include "g2o_core_api.h"
+
 namespace g2o {
 
   /**
    * \brief computing the marginal covariance given a cholesky factor (lower triangle of the factor)
    */
-  class MarginalCovarianceCholesky {
+  class G2O_CORE_API MarginalCovarianceCholesky {
     protected:
       /**
        * hash struct for storing the matrix elements needed to compute the covariance
@@ -44,11 +56,6 @@ namespace g2o {
     public:
       MarginalCovarianceCholesky();
       ~MarginalCovarianceCholesky();
-
-      /**
-       * compute the covariance for the given vertices, directly store inside the uncertainty field of the vertex
-       */
-      void computeCovariance(const std::vector<OptimizableGraph::Vertex*>& vertices);
 
       /**
        * compute the marginal cov for the given block indices, write the result to the covBlocks memory (which has to
@@ -66,6 +73,9 @@ namespace g2o {
       /**
        * set the CCS representation of the cholesky factor along with the inverse permutation used to reduce the fill-in.
        * permInv might be 0, will then not permute the entries.
+       *
+       * The pointers provided by the user need to be still valid when calling computeCovariance(). The pointers
+       * are owned by the caller, MarginalCovarianceCholesky does not free the pointers.
        */
       void setCholeskyFactor(int n, int* Lp, int* Li, double* Lx, int* permInv);
 

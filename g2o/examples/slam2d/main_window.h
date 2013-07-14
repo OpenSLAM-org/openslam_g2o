@@ -21,12 +21,19 @@
 
 #include "ui_base_main_window.h"
 
+namespace g2o {
+  class OptimizationAlgorithm;
+}
+
 class MainWindow : public QMainWindow, public Ui::BaseMainWindow
 {
   Q_OBJECT
   public:
     MainWindow(QWidget * parent = 0, Qt::WindowFlags flags = 0);
     ~MainWindow();
+
+    g2o::OptimizationAlgorithm* solverGaussNewton;
+    g2o::OptimizationAlgorithm* solverLevenberg;
 
   public slots:
     void on_actionLoad_triggered(bool);

@@ -4,7 +4,7 @@ PROJECT(csparse)
 
 SET(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-ADD_LIBRARY(csparse SHARED
+ADD_LIBRARY(csparse ${G2O_LGPL_LIB_TYPE}
   cs_add.c
   cs_amd.c
   cs_chol.c
@@ -56,9 +56,13 @@ ADD_LIBRARY(csparse SHARED
   cs_usolve.c
   cs_util.c
   cs_utsolve.c
+  cs_api.h
 )
 
 SET_TARGET_PROPERTIES(csparse PROPERTIES OUTPUT_NAME ${LIB_PREFIX}ext_csparse)
+IF (UNIX)
+  TARGET_LINK_LIBRARIES(csparse m)
+ENDIF()
 
 INSTALL(TARGETS csparse
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

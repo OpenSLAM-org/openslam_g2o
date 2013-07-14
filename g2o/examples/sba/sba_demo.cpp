@@ -1,33 +1,55 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 H. Strasdat
+// All rights reserved.
 //
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
 //
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <Eigen/StdVector>
-#include <tr1/random>
+
+#ifdef _MSC_VER
+#include <unordered_set>
+#else
+#include <tr1/unordered_set>
+#endif
+
 #include <iostream>
 #include <stdint.h>
-#include <tr1/unordered_set>
 
-#include "g2o/core/graph_optimizer_sparse.h"
+#include "g2o/config.h"
+#include "g2o/core/sparse_optimizer.h"
 #include "g2o/core/block_solver.h"
 #include "g2o/core/solver.h"
-#include "g2o/solvers/cholmod/linear_solver_cholmod.h"
-#include "g2o/solvers/cholmod/linear_solver_cholmod.h"
+#include "g2o/core/robust_kernel_impl.h"
+#include "g2o/core/optimization_algorithm_levenberg.h"
 #include "g2o/solvers/dense/linear_solver_dense.h"
 #include "g2o/types/icp/types_icp.h"
-#include "g2o/core/structure_only_solver.h"
+#include "g2o/solvers/structure_only/structure_only_solver.h"
+
+#if defined G2O_HAVE_CHOLMOD
+#include "g2o/solvers/cholmod/linear_solver_cholmod.h"
+#elif defined G2O_HAVE_CSPARSE
+#include "g2o/solvers/csparse/linear_solver_csparse.h"
+#endif
 
 using namespace Eigen;
 using namespace std;
@@ -35,40 +57,41 @@ using namespace std;
 
 class Sample
 {
-
-  static tr1::ranlux_base_01 gen_real;
-  static tr1::mt19937 gen_int;
 public:
   static int uniform(int from, int to);
-
   static double uniform();
-
   static double gaussian(double sigma);
 };
 
+static double uniform_rand(double lowerBndr, double upperBndr)
+{
+  return lowerBndr + ((double) std::rand() / (RAND_MAX + 1.0)) * (upperBndr - lowerBndr);
+}
 
-tr1::ranlux_base_01 Sample::gen_real;
-tr1::mt19937 Sample::gen_int;
+static double gauss_rand(double mean, double sigma)
+{
+  double x, y, r2;
+  do {
+    x = -1.0 + 2.0 * uniform_rand(0.0, 1.0);
+    y = -1.0 + 2.0 * uniform_rand(0.0, 1.0);
+    r2 = x * x + y * y;
+  } while (r2 > 1.0 || r2 == 0.0);
+  return mean + sigma * y * std::sqrt(-2.0 * log(r2) / r2);
+}
 
 int Sample::uniform(int from, int to)
 {
-  tr1::uniform_int<int> unif(from, to);
-  int sam = unif(gen_int);
-  return  sam;
+  return static_cast<int>(uniform_rand(from, to));
 }
 
 double Sample::uniform()
 {
-  std::tr1::uniform_real<double> unif(0.0, 1.0);
-  double sam = unif(gen_real);
-  return  sam;
+  return uniform_rand(0., 1.);
 }
 
 double Sample::gaussian(double sigma)
 {
-  std::tr1::normal_distribution<double> gauss(0.0, sigma);
-  double sam = gauss(gen_real);
-  return  sam;
+  return gauss_rand(0., sigma);
 }
 
 int main(int argc, const char* argv[])
@@ -102,18 +125,18 @@ int main(int argc, const char* argv[])
   bool ROBUST_KERNEL = false;
   if (argc>3)
   {
-    ROBUST_KERNEL = atof(argv[3]);
+    ROBUST_KERNEL = atoi(argv[3]) != 0;
   }
   bool STRUCTURE_ONLY = false;
   if (argc>4)
   {
-    STRUCTURE_ONLY = atof(argv[4]);
+    STRUCTURE_ONLY = atoi(argv[4]) != 0;
   }
 
   bool DENSE = false;
   if (argc>5)
   {
-    DENSE = atof(argv[5]);
+    DENSE = atoi(argv[5]) != 0;
   }
 
   cout << "PIXEL_NOISE: " <<  PIXEL_NOISE << endl;
@@ -125,28 +148,33 @@ int main(int argc, const char* argv[])
 
 
   g2o::SparseOptimizer optimizer;
-  optimizer.setMethod(g2o::SparseOptimizer::LevenbergMarquardt);
   optimizer.setVerbose(false);
   g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
   if (DENSE)
   {
-        linearSolver= new g2o::LinearSolverDense<g2o
-        ::BlockSolver_6_3::PoseMatrixType>();
+        linearSolver= new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
+		cerr << "Using DENSE" << endl;
   }
   else
   {
-    linearSolver
-        = new g2o::LinearSolverCholmod<g2o
-        ::BlockSolver_6_3::PoseMatrixType>();
+#ifdef G2O_HAVE_CHOLMOD
+	cerr << "Using CHOLMOD" << endl;
+    linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
+#elif defined G2O_HAVE_CSPARSE
+    linearSolver = new g2o::LinearSolverCSparse<g2o::BlockSolver_6_3::PoseMatrixType>();
+	cerr << "Using CSPARSE" << endl;
+#else
+#error neither CSparse nor Cholmod are available
+#endif
   }
 
 
   g2o::BlockSolver_6_3 * solver_ptr
-      = new g2o::BlockSolver_6_3(&optimizer,linearSolver);
+      = new g2o::BlockSolver_6_3(linearSolver);
 
+  g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
 
-  optimizer.setSolver(solver_ptr);
-
+  optimizer.setAlgorithm(solver);
 
   // set up 500 points
   vector<Vector3d> true_points;
@@ -163,8 +191,8 @@ int main(int argc, const char* argv[])
   double baseline = 0.075;      // 7.5 cm baseline
 
 
-  vector<g2o::SE3Quat,
-      aligned_allocator<g2o::SE3Quat> > true_poses;
+  vector<Eigen::Isometry3d,
+      aligned_allocator<Eigen::Isometry3d> > true_poses;
 
   // set up camera params
   g2o::VertexSCam::setKcam(focal_length[0],focal_length[1],
@@ -181,14 +209,16 @@ int main(int argc, const char* argv[])
 
     Eigen:: Quaterniond q;
     q.setIdentity();
-    g2o::SE3Quat pose(q,trans);
+    Eigen::Isometry3d pose;
+    pose = q;
+    pose.translation() = trans;
 
 
     g2o::VertexSCam * v_se3
         = new g2o::VertexSCam();
 
     v_se3->setId(vertex_id);
-    v_se3->estimate() = pose;
+    v_se3->setEstimate(pose);
     v_se3->setAll();            // set aux transforms
 
     if (i<2)
@@ -210,18 +240,16 @@ int main(int argc, const char* argv[])
   // add point projections to this vertex
   for (size_t i=0; i<true_points.size(); ++i)
   {
-    g2o::VertexPointXYZ * v_p
-        = new g2o::VertexPointXYZ();
+    g2o::VertexSBAPointXYZ * v_p
+        = new g2o::VertexSBAPointXYZ();
 
 
     v_p->setId(point_id);
     v_p->setMarginalized(true);
-    v_p->estimate() = true_points.at(i)
+    v_p->setEstimate(true_points.at(i)
         + Vector3d(Sample::gaussian(1),
                    Sample::gaussian(1),
-                   Sample::gaussian(1));
-
-
+                   Sample::gaussian(1)));
 
     int num_obs = 0;
 
@@ -240,6 +268,7 @@ int main(int argc, const char* argv[])
 
     if (num_obs>=2)
     {
+      optimizer.addVertex(v_p);
 
       bool inlier = true;
       for (size_t j=0; j<true_poses.size(); ++j)
@@ -277,12 +306,14 @@ int main(int argc, const char* argv[])
               = dynamic_cast<g2o::OptimizableGraph::Vertex*>
               (optimizer.vertices().find(j)->second);
 
-          e->measurement() = z;
-          e->inverseMeasurement() = -z;
+          e->setMeasurement(z);
+          //e->inverseMeasurement() = -z;
           e->information() = Matrix3d::Identity();
 
-          e->setRobustKernel(ROBUST_KERNEL);
-          e->setHuberWidth(1);
+          if (ROBUST_KERNEL) {
+            g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+            e->setRobustKernel(rk);
+          }
 
           optimizer.addEdge(e);
 
@@ -301,36 +332,31 @@ int main(int argc, const char* argv[])
      // else
      //   cout << "Point: " << point_id <<  "has at least one spurious observation" <<endl;
 
-
-      optimizer.addVertex(v_p);
-
       pointid_2_trueid.insert(make_pair(point_id,i));
 
       ++point_id;
       ++point_num;
-
-
     }
 
   }
-
 
   cout << endl;
   optimizer.initializeOptimization();
 
   optimizer.setVerbose(true);
 
-
-  g2o::StructureOnlySolver<3> structure_only_ba;
-
   if (STRUCTURE_ONLY)
   {
     cout << "Performing structure-only BA:"   << endl;
-    structure_only_ba.setVerbose(true);
-    structure_only_ba.calc(optimizer.vertices(),
-                           10);
+    g2o::StructureOnlySolver<3> structure_only_ba;
+    g2o::OptimizableGraph::VertexContainer points;
+    for (g2o::OptimizableGraph::VertexIDMap::const_iterator it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it) {
+      g2o::OptimizableGraph::Vertex* v = static_cast<g2o::OptimizableGraph::Vertex*>(it->second);
+      if (v->dimension() == 3)
+        points.push_back(v);
+    }
 
-
+    structure_only_ba.calc(points, 10);
   }
 
     cout << endl;
@@ -358,8 +384,8 @@ int main(int argc, const char* argv[])
       exit(-1);
     }
 
-    g2o::VertexPointXYZ * v_p
-        = dynamic_cast< g2o::VertexPointXYZ * > (v_it->second);
+    g2o::VertexSBAPointXYZ * v_p
+        = dynamic_cast< g2o::VertexSBAPointXYZ * > (v_it->second);
 
     if (v_p==0)
     {

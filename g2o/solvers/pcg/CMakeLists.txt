@@ -1,4 +1,4 @@
-ADD_LIBRARY(solver_pcg SHARED
+ADD_LIBRARY(solver_pcg ${G2O_LIB_TYPE}
   solver_pcg.cpp
   linear_solver_pcg.h  
   linear_solver_pcg.hpp

@@ -1,38 +1,38 @@
 FIND_PATH(CHOLMOD_INCLUDE_DIR NAMES cholmod.h amd.h camd.h
     PATHS
+    ${SUITE_SPARSE_ROOT}/include
     /usr/include/suitesparse
     /usr/include/ufsparse
     /opt/local/include/ufsparse
     /usr/local/include/ufsparse
     /sw/include/ufsparse
-    NO_DEFAULT_PATH
   )
 
 FIND_LIBRARY(CHOLMOD_LIBRARY NAMES cholmod
      PATHS
+     ${SUITE_SPARSE_ROOT}/lib
      /usr/lib
      /usr/local/lib
      /opt/local/lib
      /sw/lib
-     NO_DEFAULT_PATH
    )
 
 FIND_LIBRARY(AMD_LIBRARY NAMES SHARED NAMES amd
   PATHS
+  ${SUITE_SPARSE_ROOT}/lib
   /usr/lib
   /usr/local/lib
   /opt/local/lib
   /sw/lib
-  NO_DEFAULT_PATH
   )
 
 FIND_LIBRARY(CAMD_LIBRARY NAMES camd
   PATHS
+  ${SUITE_SPARSE_ROOT}/lib
   /usr/lib
   /usr/local/lib
   /opt/local/lib
   /sw/lib
-  NO_DEFAULT_PATH
   )
 
 # Different platforms seemingly require linking against different sets of libraries
@@ -44,9 +44,8 @@ IF(CYGWIN)
     /usr/local/lib
     /opt/local/lib
     /sw/lib
-    NO_DEFAULT_PATH
     )
-  PKG_CHECK_MODULES(LAPACK lapack REQUIRED)
+  PKG_CHECK_MODULES(LAPACK lapack)
 
   SET(CHOLMOD_LIBRARIES ${CHOLMOD_LIBRARY} ${AMD_LIBRARY} ${CAMD_LIBRARY} ${COLAMD_LIBRARY} ${CCOLAMD_LIBRARY} ${LAPACK_LIBRARIES})
 
@@ -60,7 +59,6 @@ ELSEIF(APPLE)
     /usr/local/lib
     /opt/local/lib
     /sw/lib
-    NO_DEFAULT_PATH
     )
 
   FIND_LIBRARY(CCOLAMD_LIBRARY NAMES ccolamd
@@ -69,7 +67,6 @@ ELSEIF(APPLE)
     /usr/local/lib
     /opt/local/lib
     /sw/lib
-    NO_DEFAULT_PATH
     )
 
   FIND_LIBRARY(METIS_LIBRARY NAMES metis
@@ -78,7 +75,6 @@ ELSEIF(APPLE)
     /usr/local/lib
     /opt/local/lib
     /sw/lib
-    NO_DEFAULT_PATH
     )
 
   SET(CHOLMOD_LIBRARIES ${CHOLMOD_LIBRARY} ${AMD_LIBRARY} ${CAMD_LIBRARY} ${COLAMD_LIBRARY} ${CCOLAMD_LIBRARY} ${METIS_LIBRARY} "-framework Accelerate")
@@ -112,7 +108,6 @@ FIND_LIBRARY(CSPARSE_LIBRARY NAMES cxsparse
   /usr/local/lib
   /opt/local/lib
   /sw/lib
-  NO_DEFAULT_PATH
   )
 
 IF(CSPARSE_INCLUDE_DIR AND CSPARSE_LIBRARY)

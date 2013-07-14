@@ -17,10 +17,16 @@
 // along with g2o.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "g2o_qglviewer.h"
-
-#include "primitives.h"
-#include "g2o/core/graph_optimizer_sparse.h"
+#include "g2o/stuff/opengl_primitives.h"
+#include "g2o/core/sparse_optimizer.h"
 #include "g2o/core/hyper_graph_action.h"
+
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
+#include <GL/gl.h>
+#include <GL/glu.h>
+#endif
 
 #include <iostream>
 using namespace std;
@@ -39,7 +45,7 @@ namespace {
 
       float zNear() const {
         if (_standard) 
-          return 0.001; 
+          return 0.001f; 
         else 
           return Camera::zNear(); 
       }
@@ -47,13 +53,13 @@ namespace {
       float zFar() const
       {  
         if (_standard) 
-          return 10000.0; 
+          return 10000.0f; 
         else 
           return Camera::zFar();
       }
 
-      const bool& standard() const {return _standard;}
-      bool& standard() {return _standard;}
+      bool standard() const {return _standard;}
+      void setStandard(bool s) { _standard = s;}
 
     private:
       bool _standard;
@@ -65,10 +71,14 @@ G2oQGLViewer::G2oQGLViewer(QWidget* parent, const QGLWidget* shareWidget, Qt::WF
   QGLViewer(parent, shareWidget, flags),
   graph(0), _drawActions(0), _drawList(0)
 {
+  setAxisIsDrawn(false);
+  _drawActionParameters = new DrawAction::Parameters();
 }
 
 G2oQGLViewer::~G2oQGLViewer()
 {
+  delete _drawActionParameters;
+  glDeleteLists(_drawList, 1);
 }
 
 void G2oQGLViewer::draw()
@@ -81,10 +91,12 @@ void G2oQGLViewer::draw()
     assert(_drawActions);
   }
   
+  if (! _drawActions) // avoid segmentation fault in release build
+    return;
   if (_updateDisplay) {
     _updateDisplay = false;
     glNewList(_drawList, GL_COMPILE_AND_EXECUTE);
-    applyAction(graph, _drawActions);
+    applyAction(graph, _drawActions, _drawActionParameters);
     glEndList();
   } else {
     glCallList(_drawList); 
@@ -94,8 +106,7 @@ void G2oQGLViewer::draw()
 void G2oQGLViewer::init()
 {
   QGLViewer::init();
-
- //glDisable(GL_LIGHT0);
+  //glDisable(GL_LIGHT0);
  //glDisable(GL_LIGHTING);
 
   setBackgroundColor(QColor::fromRgb(51, 51, 51));

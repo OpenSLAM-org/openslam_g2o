@@ -16,20 +16,21 @@
 // You should have received a copy of the GNU General Public License
 // along with g2o.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef G2O_G2O_QGL_GRAPH_VIEWER_H
-#define G2O_G2O_QGL_GRAPH_VIEWER_H
+#ifndef G2O_QGL_GRAPH_VIEWER_H
+#define G2O_QGL_GRAPH_VIEWER_H
 
 #include "qglviewer.h"
+#include "g2o_viewer_api.h"
+#include "g2o/core/hyper_graph_action.h"
 
 namespace g2o {
 
-  struct SparseOptimizer;
-  class HyperGraphElementAction;
+  class SparseOptimizer;
 
   /**
    * \brief OpenGL based viewer for the graph
    */
-  class G2oQGLViewer : public QGLViewer
+  class G2O_VIEWER_API G2oQGLViewer : public QGLViewer
   {
     public:
       G2oQGLViewer(QWidget* parent=NULL, const QGLWidget* shareWidget=0, Qt::WFlags flags=0);
@@ -44,6 +45,8 @@ namespace g2o {
       bool updateDisplay() const { return _updateDisplay;}
       void setUpdateDisplay(bool updateDisplay);
 
+      DrawAction::Parameters* parameters() { return _drawActionParameters;}
+
     public:
       SparseOptimizer* graph;
 
@@ -51,7 +54,7 @@ namespace g2o {
       HyperGraphElementAction* _drawActions;
       GLuint _drawList;
       bool _updateDisplay;
-
+      DrawAction::Parameters* _drawActionParameters;
   };
 
 } // end namespace

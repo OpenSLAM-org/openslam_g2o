@@ -1,31 +1,33 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "edge_se2.h"
 
-#ifdef WINDOWS
-#include <windows.h>
-#endif
-
 #ifdef G2O_HAVE_OPENGL
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#else
-#include <GL/gl.h>
-#endif
+#include "g2o/stuff/opengl_wrapper.h"
 #endif
 
 namespace g2o {
@@ -39,8 +41,8 @@ namespace g2o {
   {
     Vector3d p;
     is >> p[0] >> p[1] >> p[2];
-    measurement().fromVector(p);
-    inverseMeasurement() = measurement().inverse();
+    setMeasurement(SE2(p));
+    _inverseMeasurement = measurement().inverse();
     for (int i = 0; i < 3; ++i)
       for (int j = i; j < 3; ++j) {
         is >> information()(i, j);
@@ -65,9 +67,9 @@ namespace g2o {
     VertexSE2* fromEdge = static_cast<VertexSE2*>(_vertices[0]);
     VertexSE2* toEdge   = static_cast<VertexSE2*>(_vertices[1]);
     if (from.count(fromEdge) > 0)
-      toEdge->estimate() = fromEdge->estimate() * _measurement;
+      toEdge->setEstimate(fromEdge->estimate() * _measurement);
     else
-      fromEdge->estimate() = toEdge->estimate() * _inverseMeasurement;
+      fromEdge->setEstimate(toEdge->estimate() * _inverseMeasurement);
   }
 
 #ifndef NUMERIC_JACOBIAN_TWO_D_TYPES
@@ -88,7 +90,7 @@ namespace g2o {
     _jacobianOplusXj(1, 0) =-si; _jacobianOplusXj(1, 1)= ci; _jacobianOplusXj(1, 2)= 0;
     _jacobianOplusXj(2, 0) = 0;  _jacobianOplusXj(2, 1)= 0;  _jacobianOplusXj(2, 2)= 1;
 
-    const SE2& rmean = inverseMeasurement();
+    const SE2& rmean = _inverseMeasurement;
     Matrix3d z = Matrix3d::Zero();
     z.block<2, 2>(0, 0) = rmean.rotation().toRotationMatrix();
     z(2, 2) = 1.;
@@ -109,8 +111,8 @@ namespace g2o {
     }
 
     EdgeSE2* e =  static_cast<EdgeSE2*>(element);
-    VertexSE2* fromEdge = static_cast<VertexSE2*>(e->vertices()[0]);
-    VertexSE2* toEdge   = static_cast<VertexSE2*>(e->vertices()[1]);
+    VertexSE2* fromEdge = static_cast<VertexSE2*>(e->vertex(0));
+    VertexSE2* toEdge   = static_cast<VertexSE2*>(e->vertex(1));
     *(params->os) << fromEdge->estimate().translation().x() << " " << fromEdge->estimate().translation().y()
       << " " << fromEdge->estimate().rotation().angle() << std::endl;
     *(params->os) << toEdge->estimate().translation().x() << " " << toEdge->estimate().translation().y()
@@ -123,18 +125,26 @@ namespace g2o {
   EdgeSE2DrawAction::EdgeSE2DrawAction(): DrawAction(typeid(EdgeSE2).name()){}
 
   HyperGraphElementAction* EdgeSE2DrawAction::operator()(HyperGraph::HyperGraphElement* element, 
-							 HyperGraphElementAction::Parameters* /*params_*/){
+               HyperGraphElementAction::Parameters* params_){
     if (typeid(*element).name()!=_typeName)
       return 0;
+
+    refreshPropertyPtrs(params_);
+    if (! _previousParams)
+      return this;
+    
+    if (_show && !_show->value())
+      return this;
+
     EdgeSE2* e =  static_cast<EdgeSE2*>(element);
-    VertexSE2* fromEdge = static_cast<VertexSE2*>(e->vertices()[0]);
-    VertexSE2* toEdge   = static_cast<VertexSE2*>(e->vertices()[1]);
-    glColor3f(0.5,0.5,0.8);
+    VertexSE2* fromEdge = static_cast<VertexSE2*>(e->vertex(0));
+    VertexSE2* toEdge   = static_cast<VertexSE2*>(e->vertex(1));
+    glColor3f(0.5f,0.5f,0.8f);
     glPushAttrib(GL_ENABLE_BIT);
     glDisable(GL_LIGHTING);
     glBegin(GL_LINES);
-    glVertex3f(fromEdge->estimate().translation().x(),fromEdge->estimate().translation().y(),0.);
-    glVertex3f(toEdge->estimate().translation().x(),toEdge->estimate().translation().y(),0.);
+    glVertex3f((float)fromEdge->estimate().translation().x(),(float)fromEdge->estimate().translation().y(),0.f);
+    glVertex3f((float)toEdge->estimate().translation().x(),(float)toEdge->estimate().translation().y(),0.f);
     glEnd();
     glPopAttrib();
     return this;

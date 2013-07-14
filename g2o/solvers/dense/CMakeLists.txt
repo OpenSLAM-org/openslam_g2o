@@ -1,4 +1,4 @@
-ADD_LIBRARY(solver_dense SHARED
+ADD_LIBRARY(solver_dense ${G2O_LIB_TYPE}
   solver_dense.cpp linear_solver_dense.h
 )
 

@@ -1,67 +1,74 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 Kurt Konolige
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "types_sba.h"
 #include <iostream>
 
 #include "g2o/core/factory.h"
+#include "g2o/stuff/macros.h"
 
 namespace g2o {
 
   using namespace std;
-  void __attribute__ ((constructor)) init_sba_types(void)
-  {
-    //cerr << "Calling " << __FILE__ << " " << __PRETTY_FUNCTION__ << endl;
-    Factory* factory = Factory::instance();
 
-    factory->registerType("VERTEX_CAM", new HyperGraphElementCreator<VertexCam>);
-    factory->registerType("VERTEX_XYZ", new HyperGraphElementCreator<VertexPointXYZ>);
-    factory->registerType("VERTEX_INTRINSICS", new HyperGraphElementCreator<VertexIntrinsics>);
+  G2O_REGISTER_TYPE_GROUP(sba);
 
-    factory->registerType("EDGE_PROJECT_P2MC", new HyperGraphElementCreator<EdgeProjectP2MC>);
-    factory->registerType("EDGE_PROJECT_P2MC_INTRINSICS", new HyperGraphElementCreator<EdgeProjectP2MC_Intrinsics>);
-    factory->registerType("EDGE_PROJECT_P2SC", new HyperGraphElementCreator<EdgeProjectP2SC>);
-    factory->registerType("EDGE_CAM", new HyperGraphElementCreator<EdgeSBACam>);
-    factory->registerType("EDGE_SCALE", new HyperGraphElementCreator<EdgeSBAScale>);
-  }
+  G2O_REGISTER_TYPE(VERTEX_CAM, VertexCam);
+  G2O_REGISTER_TYPE(VERTEX_XYZ, VertexSBAPointXYZ);
+  G2O_REGISTER_TYPE(VERTEX_INTRINSICS, VertexIntrinsics);
+
+  G2O_REGISTER_TYPE(EDGE_PROJECT_P2MC, EdgeProjectP2MC);
+  G2O_REGISTER_TYPE(EDGE_PROJECT_P2MC_INTRINSICS, EdgeProjectP2MC_Intrinsics);
+  G2O_REGISTER_TYPE(EDGE_PROJECT_P2SC, EdgeProjectP2SC);
+  G2O_REGISTER_TYPE(EDGE_CAM, EdgeSBACam);
+  G2O_REGISTER_TYPE(EDGE_SCALE, EdgeSBAScale);
 
   // constructor
   VertexIntrinsics::VertexIntrinsics() 
   {
-    estimate() << 1. , 1. , .5 , .5 , .1;
+    _estimate << 1. , 1. , .5 , .5 , .1;
   }
 
   bool VertexIntrinsics::read(std::istream& is)
   {
     for (int i=0; i<5; i++)
-      is >> estimate()[i];
+      is >> _estimate[i];
     return true;
   }
 
   bool VertexIntrinsics::write(std::ostream& os) const
   {
     for (int i=0; i<5; i++)
-      os << estimate()[i] << " ";
+      os << _estimate[i] << " ";
     return os.good();
   }
 
   // constructor
   VertexCam::VertexCam() 
   {
-    _intrinsics = 0;
   }
 
   bool VertexCam::read(std::istream& is)
@@ -98,8 +105,7 @@ namespace g2o {
     }
 
     // set the object
-    estimate() = cam;
-
+    setEstimate(cam);
     //    std::cout << cam << std::endl;
 
     return true;
@@ -131,16 +137,16 @@ namespace g2o {
 
   bool EdgeSBACam::read(std::istream& is)
   {
+    Vector7d meas;
     for (int i=0; i<7; i++)
-      is >> measurement()[i];
-    measurement().rotation().normalize();
-    inverseMeasurement() = measurement().inverse();
-    
+      is >> meas[i];
+    setMeasurement(SE3Quat(meas));
+
     for (int i=0; i<6; i++)
       for (int j=i; j<6; j++) {
-	is >> information()(i,j);
-	if (i!=j)
-	  information()(j,i)=information()(i,j);
+  is >> information()(i,j);
+  if (i!=j)
+    information()(j,i)=information()(i,j);
       }
     return true;
   }
@@ -151,7 +157,7 @@ namespace g2o {
       os << measurement()[i] << " ";
     for (int i=0; i<6; i++)
       for (int j=i; j<6; j++){
-	os << " " <<  information()(i,j);
+  os << " " <<  information()(i,j);
       }
     return os.good();
   }
@@ -161,26 +167,25 @@ namespace g2o {
     VertexCam* from = static_cast<VertexCam*>(_vertices[0]);
     VertexCam* to = static_cast<VertexCam*>(_vertices[1]);
     if (from_.count(from) > 0)
-      to->estimate() = ((SE3Quat) from->estimate()) * _measurement;
+      to->setEstimate((SE3Quat) from->estimate() * _measurement);
     else
-      from->estimate() = ((SE3Quat) to->estimate() * _inverseMeasurement);
+      from->setEstimate((SE3Quat) to->estimate() * _inverseMeasurement);
   }
 
 
-  VertexPointXYZ::VertexPointXYZ() : BaseVertex<3, Vector3d>()
+  VertexSBAPointXYZ::VertexSBAPointXYZ() : BaseVertex<3, Vector3d>()
   {
   }
 
-  bool VertexPointXYZ::read(std::istream& is)
+  bool VertexSBAPointXYZ::read(std::istream& is)
   {
     Vector3d lv;
     for (int i=0; i<3; i++)
-      is >> lv[i];
-    estimate() = lv;
+      is >> _estimate[i];
     return true;
   }
 
-  bool VertexPointXYZ::write(std::ostream& os) const
+  bool VertexSBAPointXYZ::write(std::ostream& os) const
   {
     Vector3d lv=estimate();
     for (int i=0; i<3; i++){
@@ -191,7 +196,7 @@ namespace g2o {
 
   // point to camera projection, monocular
   EdgeProjectP2MC::EdgeProjectP2MC() :
-  BaseBinaryEdge<2, Vector2d, VertexPointXYZ, VertexCam>()
+  BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexCam>()
   {
     information().setIdentity();
   }
@@ -200,9 +205,8 @@ namespace g2o {
   {
     // measured keypoint
     for (int i=0; i<2; i++)
-      is >> measurement()[i];
-    // don't need this if we don't use it in error calculation (???)
-    inverseMeasurement() = -measurement();
+      is >> _measurement[i];
+    setMeasurement(_measurement);
     // information matrix is the identity for features, could be changed to allow arbitrary covariances
     information().setIdentity();
     return true;
@@ -217,17 +221,16 @@ namespace g2o {
 
   // point to camera projection, stereo
   EdgeProjectP2SC::EdgeProjectP2SC() :
-    BaseBinaryEdge<3, Vector3d, VertexPointXYZ, VertexCam>()
+    BaseBinaryEdge<3, Vector3d, VertexSBAPointXYZ, VertexCam>()
   {
   }
 
   bool EdgeProjectP2SC::read(std::istream& is)
   {
-    // measured keypoint
+    Vector3d meas;
     for (int i=0; i<3; i++)
-      is >> measurement()[i];
-    // don't need this if we don't use it in error calculation (???)
-    inverseMeasurement() = -measurement();
+      is >> meas[i];
+    setMeasurement(meas);
     // information matrix is the identity for features, could be changed to allow arbitrary covariances
     information().setIdentity();
     return true;
@@ -246,9 +249,9 @@ namespace g2o {
   void EdgeProjectP2SC::linearizeOplus()
   {
     VertexCam *vc = static_cast<VertexCam *>(_vertices[1]);
-    SBACam &cam = vc->estimate();
+    const SBACam &cam = vc->estimate();
 
-    VertexPointXYZ *vp = static_cast<VertexPointXYZ *>(_vertices[0]);
+    VertexSBAPointXYZ *vp = static_cast<VertexSBAPointXYZ *>(_vertices[0]);
     Vector4d pt, trans;
     pt.head<3>() = vp->estimate();
     pt(3) = 1.0;
@@ -264,11 +267,10 @@ namespace g2o {
     double py = pc(1);
     double pz = pc(2);
     double ipz2 = 1.0/(pz*pz);
-    if (isnan(ipz2) ) 
-      { 
-	std::cout << "[SetJac] infinite jac" << std::endl;
-	*(int *)0x0 = 0; 
-      }
+    if (g2o_isnan(ipz2) ) {
+      std::cout << "[SetJac] infinite jac" << std::endl;
+      abort();
+    }
 
     double ipz2fx = ipz2*cam.Kcam(0,0); // Fx
     double ipz2fy = ipz2*cam.Kcam(1,1); // Fy
@@ -332,9 +334,9 @@ namespace g2o {
   void EdgeProjectP2MC::linearizeOplus()
   {
     VertexCam *vc = static_cast<VertexCam *>(_vertices[1]);
-    SBACam &cam = vc->estimate();
+    const SBACam &cam = vc->estimate();
 
-    VertexPointXYZ *vp = static_cast<VertexPointXYZ *>(_vertices[0]);
+    VertexSBAPointXYZ *vp = static_cast<VertexSBAPointXYZ *>(_vertices[0]);
     Vector4d pt, trans;
     pt.head<3>() = vp->estimate();
     pt(3) = 1.0;
@@ -350,11 +352,10 @@ namespace g2o {
     double py = pc(1);
     double pz = pc(2);
     double ipz2 = 1.0/(pz*pz);
-    if (isnan(ipz2) ) 
-      { 
-	std::cout << "[SetJac] infinite jac" << std::endl;
-	*(int *)0x0 = 0; 
-      }
+    if (g2o_isnan(ipz2) ) {
+      std::cout << "[SetJac] infinite jac" << std::endl;
+      abort();
+    }
 
     double ipz2fx = ipz2*cam.Kcam(0,0); // Fx
     double ipz2fy = ipz2*cam.Kcam(1,1); // Fy
@@ -409,9 +410,6 @@ namespace g2o {
   {
     information().setIdentity();
     resize(3);
-    _jacobianOplus[0].resize(2,3);
-    _jacobianOplus[1].resize(2,6);
-    _jacobianOplus[2].resize(2,4);
   }
 
 /**
@@ -419,10 +417,13 @@ namespace g2o {
  */
   void EdgeProjectP2MC_Intrinsics::linearizeOplus()
   {
+    _jacobianOplus[0].resize(2,3);
+    _jacobianOplus[1].resize(2,6);
+    _jacobianOplus[2].resize(2,4);
     VertexCam *vc = static_cast<VertexCam *>(_vertices[1]);
-    SBACam &cam = vc->estimate();
+    const SBACam &cam = vc->estimate();
 
-    VertexPointXYZ *vp = static_cast<VertexPointXYZ *>(_vertices[0]);
+    VertexSBAPointXYZ *vp = static_cast<VertexSBAPointXYZ *>(_vertices[0]);
 
     //VertexIntrinsics *intr = static_cast<VertexIntrinsics *>(_vertices[2]);
 
@@ -441,11 +442,10 @@ namespace g2o {
     double py = pc(1);
     double pz = pc(2);
     double ipz2 = 1.0/(pz*pz);
-    if (isnan(ipz2) ) 
-      { 
-	std::cout << "[SetJac] infinite jac" << std::endl;
-	*(int *)0x0 = 0; 
-      }
+    if (g2o_isnan(ipz2) ) {
+      std::cout << "[SetJac] infinite jac" << std::endl;
+      abort();
+    }
 
     double ipz2fx = ipz2*cam.Kcam(0,0); // Fx
     double ipz2fy = ipz2*cam.Kcam(1,1); // Fy
@@ -502,10 +502,10 @@ namespace g2o {
   bool EdgeProjectP2MC_Intrinsics::read(std::istream& is)
   {
     // measured keypoint
+    Vector2d meas;
     for (int i=0; i<2; i++)
-      is >> measurement()[i];
-    // don't need this if we don't use it in error calculation (???)
-    inverseMeasurement() = -measurement();
+      is >> meas[i];
+    setMeasurement(meas);
     // information matrix is the identity for features, could be changed to allow arbitrary covariances
     information().setIdentity();
     return true;
@@ -527,8 +527,9 @@ namespace g2o {
   
   bool EdgeSBAScale::read(std::istream& is)
   {
-    is >> measurement();
-    inverseMeasurement() = -measurement();
+    double meas;
+    is >> meas;
+    setMeasurement(meas);
     information().setIdentity();
     is >> information()(0,0);
     return true;
@@ -549,15 +550,24 @@ namespace g2o {
       SE3Quat delta = (v1->estimate().inverse()*v2->estimate());
       double norm =  delta.translation().norm();
       double alpha = _measurement/norm;
-      delta.translation()*=alpha;
-      v2->estimate()=v1->estimate()*delta;
+      delta.setTranslation(delta.translation()*alpha);
+      v2->setEstimate(v1->estimate()*delta);
     } else {
       SE3Quat delta = (v2->estimate().inverse()*v1->estimate());
       double norm =  delta.translation().norm();
       double alpha = _measurement/norm;
-      delta.translation()*=alpha;
-      v1->estimate()=v2->estimate()*delta;
+      delta.setTranslation(delta.translation()*alpha);
+      v1->setEstimate(v2->estimate()*delta);
     }
+  }
+
+  bool EdgeSBACam::setMeasurementFromState()
+  {
+    const VertexCam* v1 = dynamic_cast<const VertexCam*>(_vertices[0]);
+    const VertexCam* v2 = dynamic_cast<const VertexCam*>(_vertices[1]);
+    _measurement = (v1->estimate().inverse()*v2->estimate());
+    _inverseMeasurement = _measurement.inverse();
+    return true;
   }
 
 } // end namespace

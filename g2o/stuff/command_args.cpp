@@ -1,34 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-// File: commandArgs.cpp
-// Copyright (c) 2009 Rainer Kümmerle <rk@raikue.net>
+// All rights reserved.
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Library General Public License for more details.
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "command_args.h"
 
@@ -36,14 +30,74 @@
 #include <cstring>
 #include <fstream>
 #include <algorithm>
+#include <functional>
+
 #include "os_specific.h"
 using namespace std;
 
 namespace g2o {
 
+// forward declarations
+std::istream& operator>>(std::istream& is, std::vector<int>& v);
+std::ostream& operator<<(std::ostream& os, const std::vector<int>& v);
+std::istream& operator>>(std::istream& is, std::vector<double>& v);
+std::ostream& operator<<(std::ostream& os, const std::vector<double>& v);
+
+std::istream& operator>>(std::istream& is, std::vector<int>& v){
+  string s;
+  if (! (is >> s) )
+    return is;
+
+  const char* c = s.c_str();
+  char* caux = const_cast<char*>(c);
+
+  v.clear();
+  bool hasNextValue=true;
+  while(hasNextValue){
+    int i = static_cast<int>(strtol(c,&caux,10));
+    if (c!=caux){
+      c=caux;
+      c++;
+      v.push_back(i);
+    } else
+      hasNextValue = false;
+  }
+  return is;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::vector<int>& v){
+  if (v.size()){
+    os << v[0];
+  }
+  for (size_t i=1; i<v.size(); i++){
+    os << "," << v[i];
+  }
+  return os;
+}
+
+/**
+ * convert a string into an other type.
+ */
+template<typename T>
+bool convertString(const std::string& s, T& x)
+{
+  std::istringstream i(s);
+  if (! (i >> x))
+    return false;
+  return true;
+}
+
+/** Helper class to sort pair based on first elem */
+template<class T1, class T2, class Pred = std::less<T1> >
+struct CmpPairFirst {
+  bool operator()(const std::pair<T1,T2>& left, const std::pair<T1,T2>& right) {
+    return Pred()(left.first, right.first);
+  }
+};
+
 enum CommandArgumentType
 {
-  CAT_DOUBLE, CAT_FLOAT, CAT_INT, CAT_STRING, CAT_BOOL
+  CAT_DOUBLE, CAT_FLOAT, CAT_INT, CAT_STRING, CAT_BOOL, CAT_VECTOR_INT, CAT_VECTOR_DOUBLE
 };
 
 CommandArgs::CommandArgs()
@@ -96,7 +150,7 @@ bool CommandArgs::parseArgs(int argc, char** argv, bool exitOnError)
             it->parsed = true;
           } else {
             if(i >= argc-1) {
-              fprintf(stderr, "Argument %s needs value.\n", name.c_str());
+              cerr << "Argument " << name << "needs value.\n";
               printHelp(cerr);
               if (exitOnError)
                 exit(1);
@@ -110,7 +164,7 @@ bool CommandArgs::parseArgs(int argc, char** argv, bool exitOnError)
         }
       }
       if (it == _args.end()) {
-        fprintf(stderr, "Error: Unknown Option '%s' (use -help to get list of options).\n", name.c_str());
+        cerr << "Error: Unknown Option '" << name << "' (use -help to get list of options).\n";
         if (exitOnError)
           exit(1);
         return false;
@@ -189,6 +243,41 @@ void CommandArgs::param(const std::string& name, double& p, double defValue, con
   _args.push_back(ca);
 }
 
+void CommandArgs::param(const std::string& name, std::string& p, const std::string& defValue, const std::string& desc)
+{
+  CommandArgument ca;
+  ca.name = name;
+  ca.description = desc;
+  ca.type = CAT_STRING;
+  ca.data = static_cast<void*>(&p);
+  ca.parsed = false;
+  p = defValue;
+  _args.push_back(ca);
+}
+
+void CommandArgs::param(const std::string& name, std::vector<int>& p, const std::vector<int>& defValue, const std::string& desc){
+  CommandArgument ca;
+  ca.name = name;
+  ca.description = desc;
+  ca.type = CAT_VECTOR_INT;
+  ca.data = static_cast<void*>(&p);
+  ca.parsed = false;
+  p = defValue;
+  _args.push_back(ca);
+}
+
+void CommandArgs::param(const std::string& name, std::vector<double>& p, const std::vector<double>& defValue, const std::string& desc)
+{
+  CommandArgument ca;
+  ca.name = name;
+  ca.description = desc;
+  ca.type = CAT_VECTOR_DOUBLE;
+  ca.data = static_cast<void*>(&p);
+  ca.parsed = false;
+  p = defValue;
+  _args.push_back(ca);
+}
+
 void CommandArgs::printHelp(std::ostream& os)
 {
   if (_banner.size())
@@ -222,11 +311,15 @@ void CommandArgs::printHelp(std::ostream& os)
     tableStrings.reserve(_args.size());
     size_t maxArgLen = 0;
     for (size_t i = 0; i < _args.size(); ++i) {
-      if (_args[i].type != CAT_BOOL)
-        tableStrings.push_back(make_pair(_args[i].name + " " + type2str(_args[i].type), _args[i].description));
-      else
+      if (_args[i].type != CAT_BOOL) {
+        string defaultValueStr = arg2str(_args[i]);
+        if (! defaultValueStr.empty())
+          tableStrings.push_back(make_pair(_args[i].name + " " + type2str(_args[i].type), _args[i].description + " (default: " + defaultValueStr + ")"));
+        else
+          tableStrings.push_back(make_pair(_args[i].name + " " + type2str(_args[i].type), _args[i].description));
+      } else
         tableStrings.push_back(make_pair(_args[i].name, _args[i].description));
-      maxArgLen = max(maxArgLen, tableStrings.back().first.size());
+      maxArgLen = (std::max)(maxArgLen, tableStrings.back().first.size());
     }
     sort(tableStrings.begin(), tableStrings.end(), CmpPairFirst<string,string>());
     maxArgLen += 3;
@@ -240,17 +333,6 @@ void CommandArgs::printHelp(std::ostream& os)
   }
 }
 
-void CommandArgs::param(const std::string& name, std::string& p, const std::string& defValue, const std::string& desc)
-{
-  CommandArgument ca;
-  ca.name = name;
-  ca.description = desc;
-  ca.type = CAT_STRING;
-  ca.data = static_cast<void*>(&p);
-  ca.parsed = false;
-  p = defValue;
-  _args.push_back(ca);
-}
 
 void CommandArgs::setBanner(const std::string& banner)
 {
@@ -286,6 +368,10 @@ const char* CommandArgs::type2str(int t) const
       return "<string>";
     case CAT_BOOL:
       return "<bool>";
+    case CAT_VECTOR_INT:
+      return "<vector_int>";
+    case CAT_VECTOR_DOUBLE:
+      return "<vector_double>";
   }
   return "";
 }
@@ -339,6 +425,26 @@ void CommandArgs::str2arg(const std::string& input, CommandArgument& ca) const
         *data = input;
       }
       break;
+    case CAT_VECTOR_INT:
+      {
+        std::vector<int> aux;
+        bool convertStatus = convertString(input, aux);
+        if (convertStatus) {
+          std::vector<int>* data = static_cast< std::vector<int>* >(ca.data);
+          *data = aux;
+        }
+      }
+      break;
+    case CAT_VECTOR_DOUBLE:
+      {
+        std::vector<double> aux;
+        bool convertStatus = convertString(input, aux);
+        if (convertStatus) {
+          std::vector<double>* data = static_cast< std::vector<double>* >(ca.data);
+          *data = aux;
+        }
+      }
+      break;
   }
 }
 
@@ -352,7 +458,6 @@ std::string CommandArgs::arg2str(const CommandArgument& ca) const
         auxStream << *data;
         return auxStream.str();
       }
-      break;
     case CAT_DOUBLE:
       {
         double* data = static_cast<double*>(ca.data);
@@ -360,7 +465,6 @@ std::string CommandArgs::arg2str(const CommandArgument& ca) const
         auxStream << *data;
         return auxStream.str();
       }
-      break;
     case CAT_INT:
       {
         int* data = static_cast<int*>(ca.data);
@@ -368,7 +472,6 @@ std::string CommandArgs::arg2str(const CommandArgument& ca) const
         auxStream << *data;
         return auxStream.str();
       }
-      break;
     case CAT_BOOL:
       {
         bool* data = static_cast<bool*>(ca.data);
@@ -376,13 +479,25 @@ std::string CommandArgs::arg2str(const CommandArgument& ca) const
         auxStream << *data;
         return auxStream.str();
       }
-      break;
     case CAT_STRING:
       {
         string* data = static_cast<string*>(ca.data);
         return *data;
       }
-      break;
+    case CAT_VECTOR_INT:
+      {
+        std::vector<int> * data = static_cast< std::vector<int> * >(ca.data);
+        stringstream auxStream;
+        auxStream << (*data);
+        return auxStream.str();
+      }
+    case CAT_VECTOR_DOUBLE:
+      {
+        std::vector<double> * data = static_cast< std::vector<double> * >(ca.data);
+        stringstream auxStream;
+        auxStream << (*data);
+        return auxStream.str();
+      }
   }
   return "";
 }
@@ -398,4 +513,47 @@ std::string CommandArgs::trim(const std::string& s) const
   return std::string(s, b, e - b + 1);
 }
 
+
+std::istream& operator>>(std::istream& is, std::vector<double>& v){
+  string s;
+  if (! (is >> s) )
+    return is;
+
+  const char* c = s.c_str();
+  char* caux = const_cast<char*>(c);
+
+  v.clear();
+  bool hasNextValue=true;
+  while(hasNextValue){
+    double i=strtod(c,&caux);
+    if (c!=caux){
+      c=caux;
+      c++;
+      v.push_back(i);
+    } else
+      hasNextValue = false;
+  }
+  return is;
 }
+
+std::ostream& operator<<(std::ostream& os, const std::vector<double>& v)
+{
+  if (v.size())
+    os << v[0];
+  for (size_t i=1; i<v.size(); i++)
+    os << ";" << v[i];
+  return os;
+}
+
+bool CommandArgs::parsedParam(const std::string& param) const
+{
+  std::vector<CommandArgument>::const_iterator it = _args.begin();
+  for ( ; it != _args.end(); ++it) {
+    if (it->name == param) {
+      return it->parsed;
+    }
+  }
+  return false;
+}
+
+} // end namespace g2o

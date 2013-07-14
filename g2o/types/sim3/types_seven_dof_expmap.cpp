@@ -1,35 +1,44 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 H. Strasdat
+// All rights reserved.
 //
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
 //
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "types_seven_dof_expmap.h"
 
 #include "g2o/core/factory.h"
+#include "g2o/stuff/macros.h"
 
 namespace g2o {
 
-  void __attribute__ ((constructor)) init_seven_dof_types(void)
-  {
-    //cerr << "Calling " << __FILE__ << " " << __PRETTY_FUNCTION__ << endl;
-    Factory* factory = Factory::instance();
-    factory->registerType("VERTEX_SIM3:EXPMAP", new HyperGraphElementCreator<VertexSim3Expmap>);
+  G2O_USE_TYPE_GROUP(sba);
+  
+  G2O_REGISTER_TYPE_GROUP(sim3);
 
-    factory->registerType("EDGE_SIM3:EXPMAP", new HyperGraphElementCreator<EdgeSim3>);
-    factory->registerType("EDGE_PROJECT_SIM3_XYZ:EXPMAP", new HyperGraphElementCreator<EdgeSim3ProjectXYZ>);
-  }
-
+  G2O_REGISTER_TYPE(VERTEX_SIM3:EXPMAP, VertexSim3Expmap);
+  G2O_REGISTER_TYPE(EDGE_SIM3:EXPMAP, EdgeSim3);
+  G2O_REGISTER_TYPE(EDGE_PROJECT_SIM3_XYZ:EXPMAP, EdgeSim3ProjectXYZ);
+  
   VertexSim3Expmap::VertexSim3Expmap() : BaseVertex<7, Sim3>()
   {
     _marginalized=false;
@@ -69,7 +78,7 @@ namespace g2o {
       is >> _principle_point[i];
     }
 
-    estimate() = Sim3(cam2world).inverse();
+    setEstimate(Sim3(cam2world).inverse());
     return true;
   }
 
@@ -99,9 +108,7 @@ namespace g2o {
     }
 
     Sim3 cam2world(v7);
-    measurement() = cam2world.inverse();
-
-    inverseMeasurement() = cam2world;
+    setMeasurement(cam2world.inverse());
 
     for (int i=0; i<7; i++)
       for (int j=i; j<7; j++)
@@ -131,7 +138,7 @@ namespace g2o {
   /**Sim3ProjectXYZ*/
 
   EdgeSim3ProjectXYZ::EdgeSim3ProjectXYZ() :
-  BaseBinaryEdge<2, Vector2d, VertexPointXYZ, VertexSim3Expmap>()
+  BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexSim3Expmap>()
   {
   }
 
@@ -139,13 +146,12 @@ namespace g2o {
   {
     for (int i=0; i<2; i++)
     {
-      is >> measurement()[i];
+      is >> _measurement[i];
     }
 
-    inverseMeasurement() = -measurement();
     for (int i=0; i<2; i++)
       for (int j=i; j<2; j++) {
-	is >> information()(i,j);
+  is >> information()(i,j);
       if (i!=j)
         information()(j,i)=information()(i,j);
     }
@@ -155,12 +161,12 @@ namespace g2o {
   bool EdgeSim3ProjectXYZ::write(std::ostream& os) const
   {
     for (int i=0; i<2; i++){
-      os  << measurement()[i] << " ";
+      os  << _measurement[i] << " ";
     }
 
     for (int i=0; i<2; i++)
       for (int j=i; j<2; j++){
-	os << " " <<  information()(i,j);
+  os << " " <<  information()(i,j);
     }
     return os.good();
   }

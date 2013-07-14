@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hyper_graph.h"
 
@@ -39,7 +49,7 @@ namespace g2o {
 
   void HyperGraph::Edge::resize(size_t size)
   {
-    _vertices.resize(size);
+    _vertices.resize(size, 0);
   }
 
   void HyperGraph::Edge::setId(int id)
@@ -63,25 +73,39 @@ namespace g2o {
     return it->second;
   }
 
-  HyperGraph::Vertex* HyperGraph::addVertex(Vertex* v)
+  bool HyperGraph::addVertex(Vertex* v)
   {
     Vertex* vn=vertex(v->id());
     if (vn)
-      return 0;
+      return false;
     _vertices.insert( std::make_pair(v->id(),v) );
-    return v;
+    return true;
   }
 
-  HyperGraph::Edge* HyperGraph::addEdge(Edge* e)
+  /**
+   * changes the id of a vertex already in the graph, and updates the bookkeeping
+   @ returns false if the vertex is not in the graph;
+  */
+  bool HyperGraph::changeId(Vertex* v, int newId){
+    Vertex* v2 = vertex(v->id());
+    if (v != v2)
+      return false;
+    _vertices.erase(v->id());
+    v->setId(newId);
+    _vertices.insert(std::make_pair(v->id(), v));
+    return true;
+  }
+
+  bool HyperGraph::addEdge(Edge* e)
   {
     std::pair<EdgeSet::iterator, bool> result = _edges.insert(e);
     if (! result.second)
-      return 0;
+      return false;
     for (std::vector<Vertex*>::iterator it = e->vertices().begin(); it != e->vertices().end(); ++it) {
       Vertex* v = *it;
       v->edges().insert(e);
     }
-    return e;
+    return true;
   }
 
   bool HyperGraph::removeVertex(Vertex* v)
@@ -92,7 +116,7 @@ namespace g2o {
     assert(it->second==v);
     //remove all edges which are entering or leaving v;
     EdgeSet tmp(v->edges());
-    for (EdgeSet::iterator it=tmp.begin(); it!=tmp.end(); it++){
+    for (EdgeSet::iterator it=tmp.begin(); it!=tmp.end(); ++it){
       if (!removeEdge(*it)){
         assert(0);
       }
@@ -126,9 +150,9 @@ namespace g2o {
 
   void HyperGraph::clear()
   {
-    for (VertexIDMap::iterator it=_vertices.begin(); it!=_vertices.end(); it++)
+    for (VertexIDMap::iterator it=_vertices.begin(); it!=_vertices.end(); ++it)
       delete (it->second);
-    for (EdgeSet::iterator it=_edges.begin(); it!=_edges.end(); it++)
+    for (EdgeSet::iterator it=_edges.begin(); it!=_edges.end(); ++it)
       delete (*it);
     _vertices.clear();
     _edges.clear();

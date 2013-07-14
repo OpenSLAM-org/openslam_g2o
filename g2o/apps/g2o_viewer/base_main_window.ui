@@ -37,6 +37,16 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
+        <widget class="QCheckBox" name="cbDrawAxis">
+         <property name="text">
+          <string>Draw Axis</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label">
          <property name="text">
           <string># Iterations</string>
@@ -49,7 +59,7 @@
           <number>1</number>
          </property>
          <property name="maximum">
-          <number>100</number>
+          <number>10000</number>
          </property>
          <property name="value">
           <number>10</number>
@@ -57,58 +67,29 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox">
-         <property name="title">
-          <string>Method</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout">
-          <item>
-           <widget class="QRadioButton" name="rbGauss">
-            <property name="text">
-             <string>Gauss-Newton</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="rbLevenberg">
-            <property name="text">
-             <string>Levenberg</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_3">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Initial Damping</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="leLambda">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="toolTip">
-             <string>Initial damping for Levenberg-Marquardt, if negative the optimizer will compute an intial value</string>
-            </property>
-            <property name="text">
-             <string>-1</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
         <widget class="QCheckBox" name="cbRobustKernel">
          <property name="text">
           <string>Robust Kernel</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="cbOnlyLoop">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Only apply the robust kernel for loop closures</string>
+         </property>
+         <property name="text">
+          <string>Non Sequential</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="coRobustKernel">
+         <property name="enabled">
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -143,6 +124,16 @@
         <widget class="QComboBox" name="coOptimizer"/>
        </item>
        <item>
+        <widget class="QPushButton" name="btnOptimizerParamaters">
+         <property name="toolTip">
+          <string>Adjust the parameters of the optimizer</string>
+         </property>
+         <property name="text">
+          <string>Parameters</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer_2">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -162,6 +153,13 @@
         <widget class="QPushButton" name="btnInitialGuess">
          <property name="text">
           <string>Initial Guess</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnSetZero">
+         <property name="text">
+          <string>SetZero</string>
          </property>
         </widget>
        </item>
@@ -254,6 +252,9 @@
     <addaction name="separator"/>
     <addaction name="actionSave_Screenshot"/>
     <addaction name="separator"/>
+    <addaction name="actionLoad_Viewer_State"/>
+    <addaction name="actionSave_Viewer_State"/>
+    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -264,6 +265,8 @@
     <addaction name="actionDefault_Background"/>
     <addaction name="separator"/>
     <addaction name="actionDump_Images"/>
+    <addaction name="separator"/>
+    <addaction name="actionProperties"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -302,9 +305,24 @@
     <string>Dump Images</string>
    </property>
   </action>
+  <action name="actionProperties">
+   <property name="text">
+    <string>Draw Options</string>
+   </property>
+  </action>
   <action name="actionSave_Screenshot">
    <property name="text">
     <string>Save Screenshot</string>
+   </property>
+  </action>
+  <action name="actionSave_Viewer_State">
+   <property name="text">
+    <string>Save Viewer State</string>
+   </property>
+  </action>
+  <action name="actionLoad_Viewer_State">
+   <property name="text">
+    <string>Load Viewer State</string>
    </property>
   </action>
  </widget>
@@ -319,66 +337,18 @@
  <resources/>
  <connections>
   <connection>
-   <sender>btnQuit</sender>
-   <signal>clicked()</signal>
-   <receiver>BaseMainWindow</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>150</x>
-     <y>479</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>167</x>
-     <y>26</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rbLevenberg</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>label_3</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>57</x>
-     <y>168</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>57</x>
-     <y>179</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rbLevenberg</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>leLambda</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>34</x>
-     <y>159</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>45</x>
-     <y>209</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>cbRobustKernel</sender>
    <signal>toggled(bool)</signal>
    <receiver>label_4</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>91</x>
-     <y>250</y>
+     <x>131</x>
+     <y>142</y>
     </hint>
     <hint type="destinationlabel">
-     <x>85</x>
-     <y>275</y>
+     <x>144</x>
+     <y>233</y>
     </hint>
    </hints>
   </connection>
@@ -389,12 +359,60 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>134</x>
-     <y>249</y>
+     <x>147</x>
+     <y>142</y>
     </hint>
     <hint type="destinationlabel">
-     <x>141</x>
-     <y>304</y>
+     <x>148</x>
+     <y>266</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btnQuit</sender>
+   <signal>clicked()</signal>
+   <receiver>BaseMainWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>101</x>
+     <y>541</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>5</x>
+     <y>554</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cbRobustKernel</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>coRobustKernel</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>33</x>
+     <y>133</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>56</x>
+     <y>210</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cbRobustKernel</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>cbOnlyLoop</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>103</x>
+     <y>141</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>101</x>
+     <y>160</y>
     </hint>
    </hints>
   </connection>

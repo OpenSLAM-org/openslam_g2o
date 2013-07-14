@@ -1,4 +1,4 @@
-ADD_LIBRARY(types_sim3 SHARED
+ADD_LIBRARY(types_sim3 ${G2O_LIB_TYPE}
   types_seven_dof_expmap.cpp
   types_seven_dof_expmap.h
 )

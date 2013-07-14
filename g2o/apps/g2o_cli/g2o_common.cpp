@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
+// All rights reserved.
 //
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
 //
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "g2o_common.h"
 
@@ -38,9 +48,15 @@ using namespace ::std;
 
 // This is used to determine where this library is
 #if defined (UNIX) || defined(CYGWIN)
-#include <dlfcn.h>
-static Dl_info info;
-#define PATH_SEPARATOR ":"
+# if (defined UNIX)
+   // dladdr is not available on a recent installation of Cygwin
+#  ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#  endif
+#  include <dlfcn.h>
+   static Dl_info info;
+#  endif
+# define PATH_SEPARATOR ":"
 #else // WINDOWS
 #define PATH_SEPARATOR ";"
 
@@ -86,11 +102,11 @@ void loadStandardTypes(DlWrapper& dlTypesWrapper, int argc, char** argv)
     typesPath = envTypesPath;
   } else {
     typesPath = G2O_DEFAULT_TYPES_DIR_;
-#if defined (UNIX) || defined(CYGWIN)
+#if (defined UNIX)
     if (dladdr(&info, &info) != 0) {
       typesPath = getDirname(info.dli_fname);
     }
-#else // Windows
+#elif (defined WINDOWS)
     char libFilename[MAX_PATH + 1];
     HMODULE instance = getMyInstance();
     if (instance && GetModuleFileName(instance, libFilename, MAX_PATH) > 0) {
@@ -117,17 +133,16 @@ void loadStandardTypes(DlWrapper& dlTypesWrapper, int argc, char** argv)
 void loadStandardSolver(DlWrapper& dlSolverWrapper, int argc, char** argv)
 {
   char * envSolversPath = getenv("G2O_SOLVERS_DIR");
-  string solversPath;
+  string solversPath = G2O_DEFAULT_SOLVERS_DIR_;
 
   if (envSolversPath != NULL) {
       solversPath = envSolversPath;
   } else {
-    solversPath = G2O_DEFAULT_SOLVERS_DIR_;
-#if defined (UNIX) || defined(CYGWIN)
+#if (defined UNIX)
     if (dladdr(&info, &info) != 0) {
       solversPath = getDirname(info.dli_fname);
     }
-#else // Windows
+#elif (defined WINDOWS)
     char libFilename[MAX_PATH + 1];
     HMODULE instance = getMyInstance();
     if (instance && GetModuleFileName(instance, libFilename, MAX_PATH) > 0) {

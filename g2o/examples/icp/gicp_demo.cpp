@@ -1,28 +1,43 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 Kurt Konolige
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <Eigen/StdVector>
+#ifdef _MSC_VER
+#include <random>
+#else
 #include <tr1/random>
+#endif
 #include <iostream>
 #include <stdint.h>
 
-#include "g2o/core/graph_optimizer_sparse.h"
+#include "g2o/core/sparse_optimizer.h"
 #include "g2o/core/block_solver.h"
 #include "g2o/core/solver.h"
-#include "g2o/solvers/cholmod/linear_solver_cholmod.h"
+#include "g2o/core/optimization_algorithm_levenberg.h"
+#include "g2o/solvers/dense/linear_solver_dense.h"
 #include "g2o/types/icp/types_icp.h"
 
 using namespace Eigen;
@@ -80,21 +95,14 @@ int main()
 
 
   SparseOptimizer optimizer;
-  optimizer.setMethod(SparseOptimizer::LevenbergMarquardt);
   optimizer.setVerbose(false);
 
   // variable-size block solver
-  BlockSolverX::LinearSolverType * linearSolver
-      = new LinearSolverCholmod<g2o
-        ::BlockSolverX::PoseMatrixType>();
+  BlockSolverX::LinearSolverType * linearSolver = new LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
+  BlockSolverX * solver_ptr = new BlockSolverX(linearSolver);
+  g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
 
-
-  BlockSolverX * solver_ptr
-      = new BlockSolverX(&optimizer,linearSolver);
-
-
-  optimizer.setSolver(solver_ptr);
-
+  optimizer.setAlgorithm(solver);
 
   vector<Vector3d> true_points;
   for (size_t i=0;i<1000; ++i)
@@ -114,11 +122,13 @@ int main()
     Quaterniond q;
     q.setIdentity();
 
-    SE3Quat cam(q,t);           // camera pose
+    Eigen::Isometry3d cam; // camera pose
+    cam = q;
+    cam.translation() = t;
 
     // set up node
     VertexSE3 *vc = new VertexSE3();
-    vc->estimate() = cam;
+    vc->setEstimate(cam);
 
     vc->setId(vertex_id);      // vertex id
 
@@ -145,8 +155,8 @@ int main()
 
     // calculate the relative 3D position of the point
     Vector3d pt0,pt1;
-    pt0 = vp0->estimate().inverse().map(true_points[i]);
-    pt1 = vp1->estimate().inverse().map(true_points[i]);
+    pt0 = vp0->estimate().inverse() * true_points[i];
+    pt1 = vp1->estimate().inverse() * true_points[i];
 
     // add in noise
     pt0 += Vector3d(Sample::gaussian(euc_noise ),
@@ -167,26 +177,28 @@ int main()
     Edge_V_V_GICP * e           // new edge with correct cohort for caching
         = new Edge_V_V_GICP(); 
 
-    e->vertices()[0]            // first viewpoint
-      = dynamic_cast<OptimizableGraph::Vertex*>(vp0);
+    e->setVertex(0, vp0);      // first viewpoint
 
-    e->vertices()[1]            // second viewpoint
-      = dynamic_cast<OptimizableGraph::Vertex*>(vp1);
+    e->setVertex(1, vp1);      // second viewpoint
 
-    e->measurement().pos0 = pt0;
-    e->measurement().pos1 = pt1;
-    e->measurement().normal0 = nm0;
-    e->measurement().normal1 = nm1;
+    EdgeGICP meas;
+    meas.pos0 = pt0;
+    meas.pos1 = pt1;
+    meas.normal0 = nm0;
+    meas.normal1 = nm1;
+
+    e->setMeasurement(meas);
     //        e->inverseMeasurement().pos() = -kp;
-
+    
+    meas = e->measurement();
     // use this for point-plane
-    e->information() = e->measurement().prec0(0.01);
+    e->information() = meas.prec0(0.01);
 
     // use this for point-point 
     //    e->information().setIdentity();
 
     //    e->setRobustKernel(true);
-    e->setHuberWidth(0.01);
+    //e->setHuberWidth(0.01);
 
     optimizer.addEdge(e);
   }
@@ -194,8 +206,9 @@ int main()
   // move second cam off of its true position
   VertexSE3* vc = 
     dynamic_cast<VertexSE3*>(optimizer.vertices().find(1)->second);
-  SE3Quat &cam = vc->estimate();
+  Eigen::Isometry3d cam = vc->estimate();
   cam.translation() = Vector3d(0,0,0.2);
+  vc->setEstimate(cam);
 
   optimizer.initializeOptimization();
   optimizer.computeActiveErrors();

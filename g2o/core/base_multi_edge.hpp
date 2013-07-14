@@ -1,20 +1,30 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, H. Strasdat, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-namespace {
+namespace internal {
   inline int computeUpperTriangleIndex(int i, int j)
   {
     int elemsUpToCol = ((j-1) * j) / 2;
@@ -25,58 +35,28 @@ namespace {
 template <int D, typename E>
 void BaseMultiEdge<D, E>::constructQuadraticForm()
 {
-  const InformationType& omega = _information;
-  Matrix<double, D, 1> omega_r = - omega * _error;
-
-  for (size_t i = 0; i < _vertices.size(); ++i) {
-    OptimizableGraph::Vertex* from = static_cast<OptimizableGraph::Vertex*>(_vertices[i]);
-    bool istatus = !(from->fixed());
-
-    if (istatus) {
-      const MatrixXd& A = _jacobianOplus[i];
-
-      MatrixXd AtO = A.transpose() * omega;
-      int fromDim = from->dimension();
-      Map<MatrixXd> fromMap(from->hessianData(), fromDim, fromDim);
-      Map<VectorXd> fromB(from->bData(), fromDim);
-
-      // ii block in the hessian
-#ifdef G2O_OPENMP
-      from->lockQuadraticForm();
-#endif
-      fromMap.noalias() += AtO * A;
-      fromB.noalias() += A.transpose() * omega_r;
-
-      // compute the off-diagonal blocks ij for all j
-      for (size_t j = i+1; j < _vertices.size(); ++j) {
-        OptimizableGraph::Vertex* to = static_cast<OptimizableGraph::Vertex*>(_vertices[j]);
-#ifdef G2O_OPENMP
-        to->lockQuadraticForm();
-#endif
-        bool jstatus = !(to->fixed());
-        if (jstatus) {
-          const MatrixXd& B = _jacobianOplus[j];
-          int idx = computeUpperTriangleIndex(i, j);
-          assert(idx < (int)_hessian.size());
-          HessianHelper& hhelper = _hessian[idx];
-          if (hhelper.transposed) { // we have to write to the block as transposed
-            hhelper.matrix.noalias() += B.transpose() * AtO.transpose();
-          } else {
-            hhelper.matrix.noalias() += AtO * B;
-          }
-        }
-#ifdef G2O_OPENMP
-        to->unlockQuadraticForm();
-#endif
-      }
-
-#ifdef G2O_OPENMP
-      from->unlockQuadraticForm();
-#endif
-    }
-
+  if (this->robustKernel()) {
+    double error = this->chi2();
+    Eigen::Vector3d rho;
+    this->robustKernel()->robustify(error, rho);
+    Matrix<double, D, 1> omega_r = - _information * _error;
+    omega_r *= rho[1];
+    computeQuadraticForm(this->robustInformation(rho), omega_r);
+  } else {
+    computeQuadraticForm(_information, - _information * _error);
   }
+}
 
+
+template <int D, typename E>
+void BaseMultiEdge<D, E>::linearizeOplus(JacobianWorkspace& jacobianWorkspace)
+{
+  for (size_t i = 0; i < _vertices.size(); ++i) {
+    OptimizableGraph::Vertex* v = static_cast<OptimizableGraph::Vertex*>(_vertices[i]);
+    assert(v->dimension() >= 0);
+    new (&_jacobianOplus[i]) JacobianType(jacobianWorkspace.workspaceForVertex(i), D, v->dimension());
+  }
+  linearizeOplus();
 }
 
 template <int D, typename E>
@@ -101,10 +81,16 @@ void BaseMultiEdge<D, E>::linearizeOplus()
     if (vi->fixed())
       continue;
 
-    int vi_dim = vi->dimension();
+    const int vi_dim = vi->dimension();
+    assert(vi_dim >= 0);
+#ifdef _MSC_VER
+    double* add_vi = new double[vi_dim];
+#else
     double add_vi[vi_dim];
+#endif
     std::fill(add_vi, add_vi + vi_dim, 0.0);
-    if (_jacobianOplus[i].rows() != _dimension || _jacobianOplus[i].cols() != vi_dim)
+    assert(_dimension >= 0);
+    assert(_jacobianOplus[i].rows() == _dimension && _jacobianOplus[i].cols() == vi_dim && "jacobian cache dimension does not match");
       _jacobianOplus[i].resize(_dimension, vi_dim);
     // add small step along the unit vector in each dimension
     for (int d = 0; d < vi_dim; ++d) {
@@ -124,6 +110,9 @@ void BaseMultiEdge<D, E>::linearizeOplus()
 
       _jacobianOplus[i].col(d) = scalar * errorBak;
     } // end dimension
+#ifdef _MSC_VER
+    delete[] add_vi;
+#endif
   }
   _error = errorBeforeNumeric;
 
@@ -139,10 +128,12 @@ void BaseMultiEdge<D, E>::linearizeOplus()
 template <int D, typename E>
 void BaseMultiEdge<D, E>::mapHessianMemory(double* d, int i, int j, bool rowMajor)
 {
-  int idx = computeUpperTriangleIndex(i, j);
+  int idx = internal::computeUpperTriangleIndex(i, j);
   assert(idx < (int)_hessian.size());
-  OptimizableGraph::Vertex* vi = static_cast<OptimizableGraph::Vertex*>(_vertices[i]);
-  OptimizableGraph::Vertex* vj = static_cast<OptimizableGraph::Vertex*>(_vertices[j]);
+  OptimizableGraph::Vertex* vi = static_cast<OptimizableGraph::Vertex*>(HyperGraph::Edge::vertex(i));
+  OptimizableGraph::Vertex* vj = static_cast<OptimizableGraph::Vertex*>(HyperGraph::Edge::vertex(j));
+  assert(vi->dimension() >= 0);
+  assert(vj->dimension() >= 0);
   HessianHelper& h = _hessian[idx];
   if (rowMajor) {
     if (h.matrix.data() != d || h.transposed != rowMajor)
@@ -162,5 +153,70 @@ void BaseMultiEdge<D, E>::resize(size_t size)
   int maxIdx = (n * (n-1))/2;
   assert(maxIdx >= 0);
   _hessian.resize(maxIdx);
-  _jacobianOplus.resize(size);
+  _jacobianOplus.resize(size, JacobianType(0,0,0));
+}
+
+template <int D, typename E>
+bool BaseMultiEdge<D, E>::allVerticesFixed() const
+{
+  for (size_t i = 0; i < _vertices.size(); ++i) {
+    if (!static_cast<const OptimizableGraph::Vertex*> (_vertices[i])->fixed()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <int D, typename E>
+void BaseMultiEdge<D, E>::computeQuadraticForm(const InformationType& omega, const ErrorVector& weightedError)
+{
+  for (size_t i = 0; i < _vertices.size(); ++i) {
+    OptimizableGraph::Vertex* from = static_cast<OptimizableGraph::Vertex*>(_vertices[i]);
+    bool istatus = !(from->fixed());
+
+    if (istatus) {
+      const MatrixXd& A = _jacobianOplus[i];
+
+      MatrixXd AtO = A.transpose() * omega;
+      int fromDim = from->dimension();
+      assert(fromDim >= 0);
+      Map<MatrixXd> fromMap(from->hessianData(), fromDim, fromDim);
+      Map<VectorXd> fromB(from->bData(), fromDim);
+
+      // ii block in the hessian
+#ifdef G2O_OPENMP
+      from->lockQuadraticForm();
+#endif
+      fromMap.noalias() += AtO * A;
+      fromB.noalias() += A.transpose() * weightedError;
+
+      // compute the off-diagonal blocks ij for all j
+      for (size_t j = i+1; j < _vertices.size(); ++j) {
+        OptimizableGraph::Vertex* to = static_cast<OptimizableGraph::Vertex*>(_vertices[j]);
+#ifdef G2O_OPENMP
+        to->lockQuadraticForm();
+#endif
+        bool jstatus = !(to->fixed());
+        if (jstatus) {
+          const MatrixXd& B = _jacobianOplus[j];
+          int idx = internal::computeUpperTriangleIndex(i, j);
+          assert(idx < (int)_hessian.size());
+          HessianHelper& hhelper = _hessian[idx];
+          if (hhelper.transposed) { // we have to write to the block as transposed
+            hhelper.matrix.noalias() += B.transpose() * AtO.transpose();
+          } else {
+            hhelper.matrix.noalias() += AtO * B;
+          }
+        }
+#ifdef G2O_OPENMP
+        to->unlockQuadraticForm();
+#endif
+      }
+
+#ifdef G2O_OPENMP
+      from->unlockQuadraticForm();
+#endif
+    }
+
+  }
 }

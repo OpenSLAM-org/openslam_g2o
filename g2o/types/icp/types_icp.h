@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 Kurt Konolige
+// All rights reserved.
 //
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
 //
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef G2O_TYPES_ICP
 #define G2O_TYPES_ICP
@@ -23,19 +33,22 @@
 #include "g2o/core/base_vertex.h"
 #include "g2o/core/base_binary_edge.h"
 #include "g2o/core/base_multi_edge.h"
-#include "g2o/math_groups/sbacam.h"
 #include "g2o/types/sba/types_sba.h"
-#include "g2o/types/slam3d/types_six_dof_quat.h"
+#include "g2o/types/slam3d/types_slam3d.h"
+#include "g2o_types_icp_api.h"
+
 #include <Eigen/Geometry>
 #include <iostream>
 
 namespace g2o {
 
+  namespace types_icp {
+    void init();
+  }
+
   using namespace Eigen;
   using namespace std;
   typedef  Matrix<double, 6, 1> Vector6d;
-
-
 
 //
 // GICP-type edges
@@ -47,7 +60,7 @@ namespace g2o {
   // class for edges between two points rigidly attached to vertices
   //
 
-  class EdgeGICP
+  class G2O_TYPES_ICP_API EdgeGICP
   {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -74,7 +87,7 @@ namespace g2o {
       }
 
     // set up rotation matrix for pos0
-    void makeRot0()
+    void makeRot0() 
     {
       Vector3d y;
       y << 0, 1, 0;
@@ -125,23 +138,23 @@ namespace g2o {
     // return a covariance matrix for plane-plane
     Matrix3d cov0(double e)
     {
-    	makeRot0();
-    	Matrix3d cov;
-    	cov  << 1, 0, 0,
-    					0, 1, 0,
-    					0, 0, e;
-    	return R0.transpose()*cov*R0;
+      makeRot0();
+      Matrix3d cov;
+      cov  << 1, 0, 0,
+              0, 1, 0,
+              0, 0, e;
+      return R0.transpose()*cov*R0;
     }
     
     // return a covariance matrix for plane-plane
     Matrix3d cov1(double e)
     {
-    	makeRot1();
-    	Matrix3d cov;
-    	cov  << 1, 0, 0,
-    					0, 1, 0,
-    					0, 0, e;
-    	return R1.transpose()*cov*R1;
+      makeRot1();
+      Matrix3d cov;
+      cov  << 1, 0, 0,
+              0, 1, 0,
+              0, 0, e;
+      return R1.transpose()*cov*R1;
     }
 
   };
@@ -151,7 +164,7 @@ namespace g2o {
   //    3 values for position wrt frame
   //    3 values for normal wrt frame, not used here
   // first two args are the measurement type, second two the connection classes
-  class Edge_V_V_GICP : public  BaseBinaryEdge<3, EdgeGICP, VertexSE3, VertexSE3>
+  class G2O_TYPES_ICP_API Edge_V_V_GICP : public  BaseBinaryEdge<3, EdgeGICP, VertexSE3, VertexSE3>
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -191,8 +204,8 @@ namespace g2o {
       else
 #endif
         {
-          p1 = vp1->estimate().map(measurement().pos1);
-          p1 = vp0->estimate().inverse().map(p1);
+          p1 = vp1->estimate() * measurement().pos1;
+          p1 = vp0->estimate().inverse() * p1;
         }
 
       //      cout << endl << "Error computation; points are: " << endl;
@@ -213,7 +226,8 @@ namespace g2o {
       if (!pl_pl) return;
 
       // re-define the information matrix
-      const Matrix3d transform = ( vp0->estimate().inverse() *  vp1->estimate() ).rotation().toRotationMatrix();
+      // topLeftCorner<3,3>() is the rotation()
+      const Matrix3d transform = ( vp0->estimate().inverse() *  vp1->estimate() ).matrix().topLeftCorner<3,3>();
       information() = ( cov0 + transform * cov1 * transform.transpose() ).inverse();
 
     }
@@ -224,9 +238,10 @@ namespace g2o {
 #endif
 
     // global derivative matrices
-    static Matrix3d dRidx, dRidy, dRidz; // differential quat matrices
+    static Matrix3d dRidx;
+	static Matrix3d dRidy;
+	static Matrix3d dRidz; // differential quat matrices
   };
-
 
 
 /**
@@ -235,9 +250,7 @@ namespace g2o {
  * than the transform from RW to camera coords.
  * Uses static vars for camera params, so there is a single camera setup.
  */
-
-
-  class VertexSCam : public VertexSE3
+  class G2O_TYPES_ICP_API VertexSCam : public VertexSE3
     {
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -249,9 +262,9 @@ namespace g2o {
       virtual bool write(std::ostream& os) const;
 
       // capture the update function to reset aux transforms
-      virtual void oplus(double* update)
+      virtual void oplusImpl(const double* update)
       {
-        VertexSE3::oplus(update);
+        VertexSE3::oplusImpl(update);
         setAll();
       }
 
@@ -301,8 +314,10 @@ namespace g2o {
       }
 
       // set transform from world to cam coords
-      void setTransform()  { transformW2F(w2n,estimate().translation(),
-                                          estimate().rotation()); }
+      void setTransform()  {
+        w2n = estimate().inverse().matrix().block<3,4>(0, 0);
+        //transformW2F(w2n,estimate().translation(), estimate().rotation());
+      }
 
       // Set up world-to-image projection matrix (w2i), assumes camera parameters
       // are filled.
@@ -345,7 +360,9 @@ namespace g2o {
         res(2) = p2(0)/p2(2);
       }
 
-      static Matrix3d dRidx, dRidy, dRidz;
+      static Matrix3d dRidx;
+	  static Matrix3d dRidy;
+	  static Matrix3d dRidz;
     };
 
 
@@ -356,7 +373,7 @@ namespace g2o {
 
 // stereo projection
 // first two args are the measurement type, second two the connection classes
-  class Edge_XYZ_VSC : public  BaseBinaryEdge<3, Vector3d, VertexPointXYZ, VertexSCam>
+  class G2O_TYPES_ICP_API Edge_XYZ_VSC : public  BaseBinaryEdge<3, Vector3d, VertexSBAPointXYZ, VertexSCam>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -370,7 +387,7 @@ namespace g2o {
     void computeError()
     {
       // from <Point> to <Cam>
-      const VertexPointXYZ *point = static_cast<const VertexPointXYZ*>(_vertices[0]);
+      const VertexSBAPointXYZ *point = static_cast<const VertexSBAPointXYZ*>(_vertices[0]);
       VertexSCam *cam = static_cast<VertexSCam*>(_vertices[1]);
       //cam->setAll();
 

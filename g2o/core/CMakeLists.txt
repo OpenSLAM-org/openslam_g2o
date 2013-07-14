@@ -1,4 +1,4 @@
-ADD_LIBRARY(core SHARED
+ADD_LIBRARY(core ${G2O_LIB_TYPE}
 base_edge.h
 base_binary_edge.h          hyper_graph_action.cpp
 base_binary_edge.hpp        hyper_graph_action.h
@@ -10,18 +10,31 @@ base_vertex.h               marginal_covariance_cholesky.h
 base_vertex.hpp             matrix_structure.cpp
 batch_stats.cpp             matrix_structure.h
 batch_stats.h               openmp_mutex.h
-block_solver.h              optimizable_graph.cpp
-block_solver.hpp            optimizable_graph.h
-solver.cpp
-creators.h                  solver_factory.cpp
-estimate_propagator.cpp     solver_factory.h
-estimate_propagator.h       solver.h
-factory.cpp                 solver_property.h
+block_solver.h              block_solver.hpp            
+parameter.cpp               parameter.h                 
+cache.cpp                   cache.h
+optimizable_graph.cpp       optimizable_graph.h         
+solver.cpp                  solver.h
+creators.h                  optimization_algorithm_factory.cpp
+estimate_propagator.cpp     optimization_algorithm_factory.h
+estimate_propagator.h       
+factory.cpp                 optimization_algorithm_property.h
 factory.h                   sparse_block_matrix.h
-graph_optimizer_sparse.cpp  sparse_block_matrix.hpp
-graph_optimizer_sparse.h
-hyper_dijkstra.cpp          structure_only_solver.h
-hyper_dijkstra.h
+sparse_optimizer.cpp  sparse_block_matrix.hpp
+sparse_optimizer.h
+hyper_dijkstra.cpp hyper_dijkstra.h
+parameter_container.cpp     parameter_container.h
+optimization_algorithm.cpp optimization_algorithm.h
+optimization_algorithm_with_hessian.cpp optimization_algorithm_with_hessian.h
+optimization_algorithm_gauss_newton.cpp optimization_algorithm_gauss_newton.h
+optimization_algorithm_levenberg.cpp optimization_algorithm_levenberg.h
+optimization_algorithm_dogleg.cpp optimization_algorithm_dogleg.h
+sparse_optimizer_terminate_action.cpp sparse_optimizer_terminate_action.h
+jacobian_workspace.cpp jacobian_workspace.h
+robust_kernel.cpp robust_kernel.h
+robust_kernel_impl.cpp robust_kernel_impl.h
+robust_kernel_factory.cpp robust_kernel_factory.h
+g2o_core_api.h
 )
 
 SET_TARGET_PROPERTIES(core PROPERTIES OUTPUT_NAME ${LIB_PREFIX}core)

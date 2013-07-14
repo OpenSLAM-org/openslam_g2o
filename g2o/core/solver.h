@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef G2O_SOLVER_H
 #define G2O_SOLVER_H
@@ -20,27 +30,28 @@
 #include "hyper_graph.h"
 #include "batch_stats.h"
 #include "sparse_block_matrix.h"
+#include "g2o_core_api.h"
 #include <cstddef>
 
 namespace g2o {
 
 
-  struct SparseOptimizer;
+  class SparseOptimizer;
 
   /**
-   * \brief Generic interface for a sparse solver operating on a graph
+   * \brief Generic interface for a sparse solver operating on a graph which solves one iteration of the linearized objective function
    */
-  class Solver
+  class G2O_CORE_API Solver
   {
     public:
-      explicit Solver(SparseOptimizer* optimizer);
+      Solver();
       virtual ~Solver();
 
     public:
       /**
        * initialize the solver, called once before the first iteration
        */
-      virtual bool init(bool online = false) = 0;
+      virtual bool init(SparseOptimizer* optimizer, bool online = false) = 0;
 
       /**
        * build the structure of the system
@@ -61,14 +72,8 @@ namespace g2o {
       virtual bool solve() = 0;
 
       /**
-       * computes the block diagonal elements of the inverted hessian
-       * and stores them in the nodes of the graph.
-       */
-      virtual bool computeMarginals() = 0;
-
-      /**
        * computes the block diagonal elements of the pattern specified in the input
-       * and stores them in the nodes of the graph.
+       * and stores them in given SparseBlockMatrix
        */
       virtual bool computeMarginals(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices) = 0;
 
@@ -77,8 +82,15 @@ namespace g2o {
        * components of A by doing += lambda along the main diagonal of the Matrix.
        * Note that this function may be called with a positive and a negative lambda.
        * The latter is used to undo a former modification.
+       * If backup is true, then the solver should store a backup of the diagonal, which
+       * can be restored by restoreDiagonal()
        */
-      virtual bool setLambda(double lambda) = 0;
+      virtual bool setLambda(double lambda, bool backup = false) = 0;
+
+      /**
+       * restore a previosly made backup of the diagonal
+       */
+      virtual void restoreDiagonal() = 0;
 
       //! return x, the solution vector
       double* x() { return _x;}
@@ -111,6 +123,15 @@ namespace g2o {
       size_t additionalVectorSpace() const { return _additionalVectorSpace;}
       void setAdditionalVectorSpace(size_t s);
 
+      /**
+       * write debug output of the Hessian if system is not positive definite
+       */
+      virtual void setWriteDebug(bool) = 0;
+      virtual bool writeDebug() const = 0;
+
+      //! write the hessian to disk using the specified file name
+      virtual bool saveHessian(const std::string& /*fileName*/) const = 0;
+
     protected:
       SparseOptimizer* _optimizer;
       double* _x;
@@ -120,8 +141,12 @@ namespace g2o {
       size_t _additionalVectorSpace;
 
       void resizeVector(size_t sx);
-  };
 
+    private:
+      // Disable the copy constructor and assignment operator
+      Solver(const Solver&) { }
+      Solver& operator= (const Solver&) { return *this; }
+  };
 } // end namespace
 
 #endif

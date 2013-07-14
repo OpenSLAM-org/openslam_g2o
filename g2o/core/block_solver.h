@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef G2O_BLOCK_SOLVER_H
 #define G2O_BLOCK_SOLVER_H
@@ -20,6 +30,8 @@
 #include "solver.h"
 #include "linear_solver.h"
 #include "sparse_block_matrix.h"
+#include "sparse_block_matrix_diagonal.h"
+#include "openmp_mutex.h"
 #include "g2o/config.h"
 
 namespace g2o {
@@ -49,16 +61,15 @@ namespace g2o {
    * \brief traits to summarize the properties of the dynamic size optimization problem
    */
   template <>
-  struct BlockSolverTraits<-1, -1>
+  struct BlockSolverTraits<Eigen::Dynamic, Eigen::Dynamic>
   {
-    static const int PoseDim = -1;
-    static const int LandmarkDim = -1;
+    static const int PoseDim = Eigen::Dynamic;
+    static const int LandmarkDim = Eigen::Dynamic;
     typedef MatrixXd PoseMatrixType;
     typedef MatrixXd LandmarkMatrixType;
     typedef MatrixXd PoseLandmarkMatrixType;
     typedef VectorXd PoseVectorType;
     typedef VectorXd LandmarkVectorType;
-
 
     typedef SparseBlockMatrix<PoseMatrixType> PoseHessianType;
     typedef SparseBlockMatrix<LandmarkMatrixType> LandmarkHessianType;
@@ -67,10 +78,23 @@ namespace g2o {
   };
 
   /**
+   * \brief base for the block solvers with some basic function interfaces
+   */
+  class BlockSolverBase : public Solver
+  {
+    public:
+      virtual ~BlockSolverBase() {}
+      /**
+       * compute dest = H * src
+       */
+      virtual void multiplyHessian(double* dest, const double* src) const = 0;
+  };
+
+  /**
    * \brief Implementation of a solver operating on the blocks of the Hessian
    */
   template <typename Traits>
-  class BlockSolver: public Solver {
+  class BlockSolver: public BlockSolverBase {
     public:
 
       static const int PoseDim = Traits::PoseDim;
@@ -93,35 +117,54 @@ namespace g2o {
        * NOTE: The BlockSolver assumes exclusive access to the linear solver and will therefore free the pointer
        * in its destructor.
        */
-      BlockSolver(SparseOptimizer* optimizer, LinearSolverType* linearSolver);
+      BlockSolver(LinearSolverType* linearSolver);
       ~BlockSolver();
 
-      virtual bool init(bool online = false);
+      virtual bool init(SparseOptimizer* optmizer, bool online = false);
       virtual bool buildStructure(bool zeroBlocks = false);
       virtual bool updateStructure(const std::vector<HyperGraph::Vertex*>& vset, const HyperGraph::EdgeSet& edges);
       virtual bool buildSystem();
       virtual bool solve();
-      virtual bool computeMarginals();
       virtual bool computeMarginals(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices);
-      virtual bool setLambda(double lambda);
+      virtual bool setLambda(double lambda, bool backup = false);
+      virtual void restoreDiagonal();
       virtual bool supportsSchur() {return true;}
       virtual bool schur() { return _doSchur;}
       virtual void setSchur(bool s) { _doSchur = s;}
 
       LinearSolver<PoseMatrixType>* linearSolver() const { return _linearSolver;}
 
+      virtual void setWriteDebug(bool writeDebug);
+      virtual bool writeDebug() const {return _linearSolver->writeDebug();}
+
+      virtual bool saveHessian(const std::string& fileName) const;
+
+      virtual void multiplyHessian(double* dest, const double* src) const { _Hpp->multiplySymmetricUpperTriangle(dest, src);}
+
     protected:
       void resize(int* blockPoseIndices, int numPoseBlocks, 
           int* blockLandmarkIndices, int numLandmarkBlocks, int totalDim);
+
+      void deallocate();
 
       SparseBlockMatrix<PoseMatrixType>* _Hpp;
       SparseBlockMatrix<LandmarkMatrixType>* _Hll;
       SparseBlockMatrix<PoseLandmarkMatrixType>* _Hpl;
 
       SparseBlockMatrix<PoseMatrixType>* _Hschur;
-      SparseBlockMatrix<LandmarkMatrixType>* _DInvSchur;
+      SparseBlockMatrixDiagonal<LandmarkMatrixType>* _DInvSchur;
+
+      SparseBlockMatrixCCS<PoseLandmarkMatrixType>* _HplCCS;
+      SparseBlockMatrixCCS<PoseMatrixType>* _HschurTransposedCCS;
 
       LinearSolver<PoseMatrixType>* _linearSolver;
+
+      std::vector<PoseVectorType, Eigen::aligned_allocator<PoseVectorType> > _diagonalBackupPose;
+      std::vector<LandmarkVectorType, Eigen::aligned_allocator<LandmarkVectorType> > _diagonalBackupLandmark;
+
+#    ifdef G2O_OPENMP
+      std::vector<OpenMPMutex> _coefficientsMutex;
+#    endif
 
       bool _doSchur;
 
@@ -134,7 +177,7 @@ namespace g2o {
 
 
   //variable size solver
-  typedef BlockSolver< BlockSolverTraits<-1, -1> > BlockSolverX;
+  typedef BlockSolver< BlockSolverTraits<Eigen::Dynamic, Eigen::Dynamic> > BlockSolverX;
   // solver for BA/3D SLAM
   typedef BlockSolver< BlockSolverTraits<6, 3> > BlockSolver_6_3;  
   // solver fo BA with scale

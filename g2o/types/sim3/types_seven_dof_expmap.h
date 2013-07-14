@@ -1,19 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 H. Strasdat
+// All rights reserved.
 //
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
 //
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef G2O_SEVEN_DOF_EXPMAP_TYPES
 #define G2O_SEVEN_DOF_EXPMAP_TYPES
@@ -21,7 +30,7 @@
 #include "g2o/core/base_vertex.h"
 #include "g2o/core/base_binary_edge.h"
 #include "g2o/types/sba/types_six_dof_expmap.h"
-#include "g2o/math_groups/sim3.h"
+#include "sim3.h"
 
 namespace g2o {
 
@@ -35,27 +44,24 @@ namespace g2o {
   class VertexSim3Expmap : public BaseVertex<7, Sim3>
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     VertexSim3Expmap();
     virtual bool read(std::istream& is);
     virtual bool write(std::ostream& os) const;
 
-    virtual void setToOrigin() {
+    virtual void setToOriginImpl() {
       _estimate = Sim3();
     }
 
-    virtual void oplus(double* update_)
+    virtual void oplusImpl(const double* update_)
     {
-
-      Vector7d update;
-      for (int i=0; i<7; i++)
-	update[i]=update_[i];
+      Map<Vector7d> update(const_cast<double*>(update_));
 
       if (_fix_scale)
         update[6] = 0;
 
       Sim3 s(update);
-      estimate()=s*estimate();
+      setEstimate(s*estimate());
     }
 
     Vector2d _principle_point;
@@ -101,15 +107,15 @@ namespace g2o {
       VertexSim3Expmap* v1 = static_cast<VertexSim3Expmap*>(_vertices[0]);
       VertexSim3Expmap* v2 = static_cast<VertexSim3Expmap*>(_vertices[1]);
       if (from.count(v1) > 0)
-	v2->estimate()=measurement()*v1->estimate();
+  v2->setEstimate(measurement()*v1->estimate());
       else
-	v1->estimate()=measurement().inverse()*v2->estimate();
+  v1->setEstimate(measurement().inverse()*v2->estimate());
     }
   };
 
 
 /**/
-class EdgeSim3ProjectXYZ : public  BaseBinaryEdge<2, Vector2d,  VertexPointXYZ, VertexSim3Expmap>
+class EdgeSim3ProjectXYZ : public  BaseBinaryEdge<2, Vector2d,  VertexSBAPointXYZ, VertexSim3Expmap>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -120,7 +126,7 @@ class EdgeSim3ProjectXYZ : public  BaseBinaryEdge<2, Vector2d,  VertexPointXYZ, 
     void computeError()
     {
       const VertexSim3Expmap* v1 = static_cast<const VertexSim3Expmap*>(_vertices[1]);
-      const VertexPointXYZ* v2 = static_cast<const VertexPointXYZ*>(_vertices[0]);
+      const VertexSBAPointXYZ* v2 = static_cast<const VertexSBAPointXYZ*>(_vertices[0]);
 
       Vector2d obs(_measurement);
       _error = obs-v1->cam_map(project(v1->estimate().map(v2->estimate())));

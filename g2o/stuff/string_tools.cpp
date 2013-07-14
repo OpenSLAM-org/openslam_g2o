@@ -1,18 +1,28 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "string_tools.h"
 #include "os_specific.h"
@@ -27,7 +37,7 @@
 #include <iostream>
 #include <iterator>
 
-#ifdef UNIX
+#if (defined (UNIX) || defined(CYGWIN)) && !defined(ANDROID)
 #include <wordexp.h>
 #endif
 
@@ -92,8 +102,9 @@ std::string formatString(const char* fmt, ...)
   string retString;
   if (numChar != -1)
     retString = auxPtr;
-  else
-    throw RuntimeError("Error while allocating memory");
+  else {
+    cerr << __PRETTY_FUNCTION__ << ": Error while allocating memory" << endl;
+  }
   free(auxPtr);
   return retString;
 }
@@ -112,8 +123,7 @@ int strPrintf(std::string& str, const char* fmt, ...)
 
 std::string strExpandFilename(const std::string& filename)
 {
-
-  #ifdef UNIX
+#if (defined (UNIX) || defined(CYGWIN)) && !defined(ANDROID)
   string result = filename;
   wordexp_t p;
 
@@ -123,14 +133,11 @@ std::string strExpandFilename(const std::string& filename)
   }
   wordfree(&p);
   return result;
-  #endif
-
-  #ifdef WINDOWS
+#else
   (void) filename;
   std::cerr << "WARNING: " << __PRETTY_FUNCTION__ << " not implemented" << std::endl;
   return std::string();
-  #endif
-
+#endif
 }
 
 std::vector<std::string> strSplit(const std::string& str, const std::string& delimiters)
@@ -172,7 +179,7 @@ int readLine(std::istream& is, std::stringstream& currentLine)
   if (is.fail()) // fail is set on empty lines
     is.clear();
   G2O_FSKIP_LINE(is); // read \n not read by get()
-  return currentLine.str().size();
+  return static_cast<int>(currentLine.str().size());
 }
 
 } // end namespace

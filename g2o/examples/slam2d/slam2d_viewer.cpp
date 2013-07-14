@@ -21,7 +21,7 @@
 #include "draw_helpers.h"
 #include "g2o/types/slam2d/vertex_se2.h"
 #include "g2o/types/slam2d/vertex_point_xy.h"
-#include "g2o/core/graph_optimizer_sparse.h"
+#include "g2o/core/sparse_optimizer.h"
 
 #include <Eigen/Core>
 #include <iostream>
@@ -41,7 +41,7 @@ namespace {
 
       float zNear() const {
         if (_standard) 
-          return 0.001; 
+          return 0.001f; 
         else 
           return Camera::zNear(); 
       }
@@ -49,7 +49,7 @@ namespace {
       float zFar() const
       {  
         if (_standard) 
-          return 1000.0; 
+          return 1000.0f; 
         else 
           return Camera::zFar();
       }
@@ -155,7 +155,8 @@ void Slam2DViewer::draw()
     for (SparseOptimizer::VertexIDMap::iterator it = graph->vertices().begin(); it != graph->vertices().end(); ++it) {
       VertexSE2* v = dynamic_cast<VertexSE2*>(it->second);
       if (v) {
-        drawCov(v->estimate().translation(), v->uncertainty());
+        // TODO
+        //drawCov(v->estimate().translation(), v->uncertainty());
       }
     }
   }

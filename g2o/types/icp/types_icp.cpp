@@ -1,25 +1,72 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 Kurt Konolige
+// All rights reserved.
 //
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
 //
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "types_icp.h"
 #include "g2o/core/factory.h"
+#include "g2o/stuff/macros.h"
 
 #include <iostream>
 
 namespace g2o {
+
+  G2O_REGISTER_TYPE_GROUP(icp);
+  G2O_REGISTER_TYPE(EDGE_V_V_GICP, Edge_V_V_GICP);
+
+  namespace types_icp {
+    int initialized = 0;
+
+    void init()
+    {
+      if (types_icp::initialized)
+        return;
+      //cerr << "Calling " << __FILE__ << " " << __PRETTY_FUNCTION__ << endl;
+
+      Edge_V_V_GICP::dRidx << 0.0,0.0,0.0,
+        0.0,0.0,2.0,
+        0.0,-2.0,0.0;
+      Edge_V_V_GICP::dRidy  << 0.0,0.0,-2.0,
+        0.0,0.0,0.0,
+        2.0,0.0,0.0;
+      Edge_V_V_GICP::dRidz  << 0.0,2.0,0.0,
+        -2.0,0.0,0.0,
+        0.0,0.0,0.0;
+
+      VertexSCam::dRidx << 0.0,0.0,0.0,
+        0.0,0.0,2.0,
+        0.0,-2.0,0.0;
+      VertexSCam::dRidy  << 0.0,0.0,-2.0,
+        0.0,0.0,0.0,
+        2.0,0.0,0.0;
+      VertexSCam::dRidz  << 0.0,2.0,0.0,
+        -2.0,0.0,0.0,
+        0.0,0.0,0.0;
+
+      types_icp::initialized = 1;
+    }
+  }
 
   using namespace std;
   using namespace Eigen;
@@ -35,54 +82,33 @@ namespace g2o {
   double VertexSCam::baseline;
 
   // global initialization
-  void __attribute__ ((constructor)) init_icp_types(void)
+  G2O_ATTRIBUTE_CONSTRUCTOR(init_icp_types)
   {
-    //cerr << "Calling " << __FILE__ << " " << __PRETTY_FUNCTION__ << endl;
-    Factory* factory = Factory::instance();
-    factory->registerType("EDGE_V_V_GICP", new HyperGraphElementCreator<Edge_V_V_GICP>);
-
-    Edge_V_V_GICP::dRidx << 0.0,0.0,0.0,
-      0.0,0.0,2.0,
-      0.0,-2.0,0.0;
-    Edge_V_V_GICP::dRidy  << 0.0,0.0,-2.0,
-      0.0,0.0,0.0,
-      2.0,0.0,0.0;
-    Edge_V_V_GICP::dRidz  << 0.0,2.0,0.0,
-      -2.0,0.0,0.0,
-      0.0,0.0,0.0;
-
-    VertexSCam::dRidx << 0.0,0.0,0.0,
-      0.0,0.0,2.0,
-      0.0,-2.0,0.0;
-    VertexSCam::dRidy  << 0.0,0.0,-2.0,
-      0.0,0.0,0.0,
-      2.0,0.0,0.0;
-    VertexSCam::dRidz  << 0.0,2.0,0.0,
-      -2.0,0.0,0.0,
-      0.0,0.0,0.0;
-
+    types_icp::init();
   }
 
   // Copy constructor
   Edge_V_V_GICP::Edge_V_V_GICP(const Edge_V_V_GICP* e)
     : BaseBinaryEdge<3, EdgeGICP, VertexSE3, VertexSE3>()
   {
-    vertices()[0] = e->vertices()[0];
-    vertices()[1] = e->vertices()[1];
 
-    measurement().pos0 = e->measurement().pos0;
-    measurement().pos1 = e->measurement().pos1;
-    measurement().normal0 = e->measurement().normal0;
-    measurement().normal1 = e->measurement().normal1;
-    measurement().R0 = e->measurement().R0;
-    measurement().R1 = e->measurement().R1;
+    // Temporary hack - TODO, sort out const-ness properly
+    _vertices[0] = const_cast<HyperGraph::Vertex*> (e->vertex(0));
+    _vertices[1] = const_cast<HyperGraph::Vertex*> (e->vertex(1));
+
+    _measurement.pos0 = e->measurement().pos0;
+    _measurement.pos1 = e->measurement().pos1;
+    _measurement.normal0 = e->measurement().normal0;
+    _measurement.normal1 = e->measurement().normal1;
+    _measurement.R0 = e->measurement().R0;
+    _measurement.R1 = e->measurement().R1;
 
     pl_pl = e->pl_pl;
     cov0 = e->cov0;
     cov1 = e->cov1;
 
-    _robustKernel = e->_robustKernel;
-    _huberWidth = e->_huberWidth;
+    // TODO the robust kernel is not correctly copied
+    //_robustKernel = e->_robustKernel;
   }
 
   //
@@ -99,20 +125,20 @@ namespace g2o {
   {
     // measured point and normal
     for (int i=0; i<3; i++)
-      is >> measurement().pos0[i];
+      is >> _measurement.pos0[i];
     for (int i=0; i<3; i++)
-      is >> measurement().normal0[i];
+      is >> _measurement.normal0[i];
 
     // measured point and normal
     for (int i=0; i<3; i++)
-      is >> measurement().pos1[i];
+      is >> _measurement.pos1[i];
     for (int i=0; i<3; i++)
-      is >> measurement().normal1[i];
+      is >> _measurement.normal1[i];
 
     // don't need this if we don't use it in error calculation (???)
     //    inverseMeasurement() = -measurement();
 
-    measurement().makeRot0();  // set up rotation matrices
+    _measurement.makeRot0();  // set up rotation matrices
 
     // GICP info matrices
 
@@ -122,13 +148,13 @@ namespace g2o {
     prec << v, 0, 0,
             0, v, 0,
             0, 0, 1;
-    Matrix3d &R = measurement().R0; // plane of the point in vp0
+    const Matrix3d &R = measurement().R0; // plane of the point in vp0
     information() = R.transpose()*prec*R;
 
     //    information().setIdentity();
 
     //    setRobustKernel(true);
-    setHuberWidth(0.01);      // units? m?
+    //setHuberWidth(0.01);      // units? m?
 
     return true;
   }
@@ -149,14 +175,15 @@ namespace g2o {
     VertexSE3* vp0 = static_cast<VertexSE3*>(_vertices[0]);
     VertexSE3* vp1 = static_cast<VertexSE3*>(_vertices[1]);
 
-    Matrix3d R0T = vp0->estimate().rotation().toRotationMatrix().transpose();
+    // topLeftCorner<3,3>() is the rotation matrix
+    Matrix3d R0T = vp0->estimate().matrix().topLeftCorner<3,3>().transpose();
     Vector3d p1 = measurement().pos1;
 
     // this could be more efficient
     if (!vp0->fixed())
       {
-        SE3Quat T01 = vp0->estimate().inverse() *  vp1->estimate();
-        Vector3d p1t = T01.map(p1);
+        Eigen::Isometry3d T01 = vp0->estimate().inverse() *  vp1->estimate();
+        Vector3d p1t = T01 * p1;
         _jacobianOplusXi.block<3,3>(0,0) = -Matrix3d::Identity();
         _jacobianOplusXi.block<3,1>(0,3) = dRidx*p1t;
         _jacobianOplusXi.block<3,1>(0,4) = dRidy*p1t;
@@ -165,7 +192,7 @@ namespace g2o {
 
     if (!vp1->fixed())
       {
-        Matrix3d R1 = vp1->estimate().rotation().toRotationMatrix();
+        Matrix3d R1 = vp1->estimate().matrix().topLeftCorner<3,3>();
         R0T = R0T*R1;
         _jacobianOplusXj.block<3,3>(0,0) = R0T;
         _jacobianOplusXj.block<3,1>(0,3) = R0T*dRidx.transpose()*p1;
@@ -216,7 +243,7 @@ namespace g2o {
   {
     VertexSCam *vc = static_cast<VertexSCam *>(_vertices[1]);
 
-    VertexPointXYZ *vp = static_cast<VertexPointXYZ *>(_vertices[0]);
+    VertexSBAPointXYZ *vp = static_cast<VertexSBAPointXYZ *>(_vertices[0]);
     Vector4d pt, trans;
     pt.head<3>() = vp->estimate();
     pt(3) = 1.0;
@@ -234,8 +261,8 @@ namespace g2o {
     double ipz2 = 1.0/(pz*pz);
     if (isnan(ipz2) )
       {
-	std::cout << "[SetJac] infinite jac" << std::endl;
-	*(int *)0x0 = 0;
+  std::cout << "[SetJac] infinite jac" << std::endl;
+  *(int *)0x0 = 0;
       }
 
     double ipz2fx = ipz2*vc->Kcam(0,0); // Fx

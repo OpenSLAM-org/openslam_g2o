@@ -1,69 +1,68 @@
 // g2o - General Graph Optimization
 // Copyright (C) 2011 R. Kuemmerle, G. Grisetti, W. Burgard
-// 
-// g2o is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// g2o is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "g2o/config.h"
-#include "vertex_se2.h"
-#include "vertex_point_xy.h"
-
-#include "edge_se2_prior.h"
-#include "edge_se2.h"
-#include "edge_se2_multi.h"
-#include "edge_se2_pointxy.h"
-#include "edge_se2_pointxy_bearing.h"
-#include "edge_se2_pointxy_calib.h"
+#include "types_slam2d.h"
 
 #include "g2o/core/factory.h"
 
 #include "g2o/stuff/macros.h"
 
+#include <iostream>
+
 namespace g2o {
 
-  void G2O_ATTRIBUTE_CONSTRUCTOR init_types_slam2d(void)
-  {
-    Factory* factory = Factory::instance();
-    //cerr << "Calling " << __FILE__ << " " << __PRETTY_FUNCTION__ << endl;
+  G2O_REGISTER_TYPE_GROUP(slam2d);
 
-    factory->registerType("VERTEX_SE2", new HyperGraphElementCreator<VertexSE2>);
-    factory->registerType("VERTEX_XY", new HyperGraphElementCreator<VertexPointXY>);
+  G2O_REGISTER_TYPE(VERTEX_SE2, VertexSE2);
+  G2O_REGISTER_TYPE(VERTEX_XY, VertexPointXY);
+  G2O_REGISTER_TYPE(PARAMS_SE2OFFSET, ParameterSE2Offset);
+  G2O_REGISTER_TYPE(CACHE_SE2_OFFSET, CacheSE2Offset);
+  G2O_REGISTER_TYPE(EDGE_PRIOR_SE2, EdgeSE2Prior);
+  G2O_REGISTER_TYPE(EDGE_PRIOR_SE2_XY, EdgeSE2XYPrior);
+  G2O_REGISTER_TYPE(EDGE_SE2, EdgeSE2);
+  G2O_REGISTER_TYPE(EDGE_SE2_XY, EdgeSE2PointXY);
+  G2O_REGISTER_TYPE(EDGE_BEARING_SE2_XY, EdgeSE2PointXYBearing);
+  G2O_REGISTER_TYPE(EDGE_SE2_XY_CALIB, EdgeSE2PointXYCalib);
+  G2O_REGISTER_TYPE(EDGE_SE2_OFFSET, EdgeSE2Offset);
+  G2O_REGISTER_TYPE(EDGE_SE2_POINTXY_OFFSET, EdgeSE2PointXYOffset);
 
-    factory->registerType("EDGE_PIOR_SE2", new HyperGraphElementCreator<EdgeSE2Prior>);
+ 
+  G2O_REGISTER_ACTION(VertexSE2WriteGnuplotAction);
+  G2O_REGISTER_ACTION(VertexPointXYWriteGnuplotAction);
+  G2O_REGISTER_ACTION(EdgeSE2WriteGnuplotAction);
+  G2O_REGISTER_ACTION(EdgeSE2PointXYWriteGnuplotAction);
+  G2O_REGISTER_ACTION(EdgeSE2PointXYBearingWriteGnuplotAction);
 
-    factory->registerType("EDGE_SE2", new HyperGraphElementCreator<EdgeSE2>);
-    factory->registerType("EDGE_SE2_XY", new HyperGraphElementCreator<EdgeSE2PointXY>);
-    factory->registerType("EDGE_BEARING_SE2_XY", new HyperGraphElementCreator<EdgeSE2PointXYBearing>);
-    factory->registerType("EDGE_SE2_MULTI", new HyperGraphElementCreator<EdgeSE2Multi>);
-
-    factory->registerType("EDGE_SE2_XY_CALIB", new HyperGraphElementCreator<EdgeSE2PointXYCalib>);
-
-    HyperGraphActionLibrary* actionLib = HyperGraphActionLibrary::instance();
-
-    actionLib->registerAction(new VertexSE2WriteGnuplotAction);
-    actionLib->registerAction(new VertexPointXYWriteGnuplotAction);
-    actionLib->registerAction(new EdgeSE2WriteGnuplotAction);
-    actionLib->registerAction(new EdgeSE2PointXYWriteGnuplotAction);
-    actionLib->registerAction(new EdgeSE2PointXYBearingWriteGnuplotAction);
 
 #ifdef G2O_HAVE_OPENGL
-    actionLib->registerAction(new VertexSE2DrawAction);
-    actionLib->registerAction(new VertexPointXYDrawAction);
-    actionLib->registerAction(new EdgeSE2DrawAction);
-    actionLib->registerAction(new EdgeSE2PointXYDrawAction);
-    actionLib->registerAction(new EdgeSE2PointXYBearingDrawAction);
+  G2O_REGISTER_ACTION(VertexSE2DrawAction);
+  G2O_REGISTER_ACTION(VertexPointXYDrawAction);
+  G2O_REGISTER_ACTION(EdgeSE2DrawAction);
+  G2O_REGISTER_ACTION(EdgeSE2PointXYDrawAction);
+  G2O_REGISTER_ACTION(EdgeSE2PointXYBearingDrawAction);
+
 #endif
-
-  }
-
 } // end namespace
