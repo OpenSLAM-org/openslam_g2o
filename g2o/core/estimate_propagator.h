@@ -51,7 +51,6 @@ namespace g2o {
     public:
       EstimatePropagatorCost (SparseOptimizer* graph);
       virtual double operator()(OptimizableGraph::Edge* edge, const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to_) const;
-      virtual const char* name() const { return "spanning tree";}
     protected:
       SparseOptimizer* _graph;
   };
@@ -66,7 +65,6 @@ namespace g2o {
     public:
       EstimatePropagatorCostOdometry(SparseOptimizer* graph);
       virtual double operator()(OptimizableGraph::Edge* edge, const OptimizableGraph::VertexSet& from_, OptimizableGraph::Vertex* to_) const;
-      virtual const char* name() const { return "odometry";}
   };
 
   /**
